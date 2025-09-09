@@ -24,99 +24,222 @@ struct SetupView: View {
     ]
     
     var body: some View {
-        VStack(spacing: 30) {
-            Text("简单导航设置")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .padding(.top, 20)
-            
-            Text("请输入最多3个重要地址")
-                .font(.headline)
-                .foregroundColor(.secondary)
-            
-            VStack(spacing: 20) {
-                AddressInputField(
-                    label: "地址1 (家)",
-                    address: $address1,
-                    placeholder: "请输入家庭地址"
+        GeometryReader { geometry in
+            ZStack {
+                // 现代化渐变背景
+                LinearGradient(
+                    colors: [
+                        Color.blue.opacity(0.1),
+                        Color.green.opacity(0.05),
+                        Color.orange.opacity(0.05)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
+                .ignoresSafeArea()
                 
-                AddressInputField(
-                    label: "地址2 (可选)",
-                    address: $address2,
-                    placeholder: "请输入第二个地址"
-                )
-                
-                AddressInputField(
-                    label: "地址3 (可选)",
-                    address: $address3,
-                    placeholder: "请输入第三个地址"
-                )
-            }
-            .padding(.horizontal, 20)
+                ScrollView {
+                    VStack(spacing: 30) {
+                        // 顶部标题卡片
+                        VStack(spacing: 16) {
+                            Image(systemName: "location.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.blue, .purple],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .shadow(color: .blue.opacity(0.3), radius: 10)
+                            
+                            Text("简单导航设置")
+                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.primary, .blue],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                            
+                            Text("为您的重要地点设置地址，让回家变得简单")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                        }
+                        .padding(.vertical, 30)
+                        .padding(.horizontal, 20)
+                        .background(
+                            RoundedRectangle(cornerRadius: 25)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
             
-            // 名古屋地址建议按钮
-            Button("使用名古屋示例地址") {
-                showSuggestedAddresses.toggle()
-            }
-            .font(.subheadline)
-            .foregroundColor(.blue)
+                        // 地址输入卡片
+                        VStack(spacing: 20) {
+                            ModernAddressInputField(
+                                icon: "house.fill",
+                                iconColor: .blue,
+                                label: "主要地址 (家)",
+                                address: $address1,
+                                placeholder: "请输入家庭地址",
+                                isRequired: true
+                            )
+                            
+                            ModernAddressInputField(
+                                icon: "building.2.fill",
+                                iconColor: .orange,
+                                label: "工作地点 (可选)",
+                                address: $address2,
+                                placeholder: "请输入工作地址",
+                                isRequired: false
+                            )
+                            
+                            ModernAddressInputField(
+                                icon: "heart.fill",
+                                iconColor: .pink,
+                                label: "其他地点 (可选)",
+                                address: $address3,
+                                placeholder: "请输入第三个地址",
+                                isRequired: false
+                            )
+                        }
+                        .padding(.horizontal, 20)
             
-            if showSuggestedAddresses {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("名古屋地区常用地址：")
-                        .font(.headline)
-                        .padding(.bottom, 5)
-                    
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                        ForEach(suggestedNagoyaAddresses, id: \.self) { address in
-                            Button(action: {
-                                if address1.isEmpty {
-                                    address1 = address
-                                } else if address2.isEmpty {
-                                    address2 = address
-                                } else if address3.isEmpty {
-                                    address3 = address
+                        // 名古屋地址建议卡片
+                        VStack(spacing: 16) {
+                            Button(action: { 
+                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                    showSuggestedAddresses.toggle()
                                 }
-                                showSuggestedAddresses = false
                             }) {
-                                Text(address)
-                                    .font(.caption)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.blue.opacity(0.1))
-                                    .cornerRadius(8)
-                                    .foregroundColor(.blue)
+                                HStack(spacing: 12) {
+                                    Image(systemName: "mappin.and.ellipse")
+                                        .font(.system(size: 20, weight: .medium))
+                                    Text("使用名古屋示例地址")
+                                        .font(.system(size: 18, weight: .medium))
+                                    Spacer()
+                                    Image(systemName: showSuggestedAddresses ? "chevron.up" : "chevron.down")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .rotationEffect(.degrees(showSuggestedAddresses ? 0 : 0))
+                                        .animation(.easeInOut(duration: 0.2), value: showSuggestedAddresses)
+                                }
+                                .foregroundColor(.blue)
+                                .padding(20)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.blue.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            
+                            if showSuggestedAddresses {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    HStack {
+                                        Image(systemName: "location.fill")
+                                            .foregroundColor(.green)
+                                        Text("常用名古屋地址")
+                                            .font(.system(size: 18, weight: .semibold))
+                                        Spacer()
+                                    }
+                                    
+                                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                                        ForEach(suggestedNagoyaAddresses, id: \.self) { address in
+                                            Button(action: {
+                                                withAnimation(.easeInOut(duration: 0.3)) {
+                                                    if address1.isEmpty {
+                                                        address1 = address
+                                                    } else if address2.isEmpty {
+                                                        address2 = address
+                                                    } else if address3.isEmpty {
+                                                        address3 = address
+                                                    }
+                                                    showSuggestedAddresses = false
+                                                }
+                                            }) {
+                                                VStack(alignment: .leading, spacing: 8) {
+                                                    Text(address)
+                                                        .font(.system(size: 14, weight: .medium))
+                                                        .multilineTextAlignment(.leading)
+                                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                                        .lineLimit(2)
+                                                }
+                                                .padding(12)
+                                                .frame(maxWidth: .infinity, minHeight: 60)
+                                                .background(Color.white)
+                                                .cornerRadius(12)
+                                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                            }
+                                            .foregroundColor(.primary)
+                                        }
+                                    }
+                                }
+                                .padding(20)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color(.systemBackground))
+                                )
+                                .transition(.scale.combined(with: .opacity))
                             }
                         }
+                        .padding(.horizontal, 20)
+                        
+                        // 现代化保存按钮
+                        Button(action: saveAddresses) {
+                            HStack(spacing: 12) {
+                                if isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 20, weight: .medium))
+                                    Text("保存设置")
+                                        .font(.system(size: 20, weight: .semibold))
+                                }
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(
+                                        address1.isEmpty || isLoading 
+                                        ? Color.gray.opacity(0.6)
+                                        : LinearGradient(
+                                            colors: [.blue, .purple],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .shadow(
+                                        color: address1.isEmpty || isLoading 
+                                        ? .clear 
+                                        : .blue.opacity(0.3), 
+                                        radius: 12, x: 0, y: 6
+                                    )
+                            )
+                            .scaleEffect(address1.isEmpty || isLoading ? 0.98 : 1.0)
+                            .animation(.easeInOut(duration: 0.2), value: address1.isEmpty)
+                            .animation(.easeInOut(duration: 0.2), value: isLoading)
+                        }
+                        .disabled(address1.isEmpty || isLoading)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+                        
+                        // 底部间距
+                        Color.clear
+                            .frame(height: 30)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(10)
-                .padding(.horizontal, 20)
             }
-            
-            Button(action: saveAddresses) {
-                if isLoading {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                } else {
-                    Text("保存设置")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(address1.isEmpty ? Color.gray : Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .padding(.horizontal, 20)
-            .disabled(address1.isEmpty || isLoading)
-            
-            Spacer()
         }
         .onAppear {
             loadSavedAddresses()
@@ -145,6 +268,74 @@ struct SetupView: View {
     }
 }
 
+// 现代化地址输入组件
+struct ModernAddressInputField: View {
+    let icon: String
+    let iconColor: Color
+    let label: String
+    @Binding var address: String
+    let placeholder: String
+    let isRequired: Bool
+    
+    @State private var isFocused = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(iconColor)
+                Text(label)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                if isRequired {
+                    Text("*")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.red)
+                }
+                Spacer()
+            }
+            
+            TextField(placeholder, text: $address)
+                .font(.system(size: 16, weight: .medium))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color(.systemGray6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(
+                                    isFocused 
+                                    ? iconColor 
+                                    : Color.clear, 
+                                    lineWidth: 2
+                                )
+                        )
+                )
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isFocused = true
+                    }
+                }
+                .onSubmit {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isFocused = false
+                    }
+                }
+                .scaleEffect(isFocused ? 1.02 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: isFocused)
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
+        )
+    }
+}
+
+// 保留旧版本以防兼容性问题
 struct AddressInputField: View {
     let label: String
     @Binding var address: String
