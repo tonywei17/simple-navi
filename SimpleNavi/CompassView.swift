@@ -4,9 +4,11 @@ import CoreLocation
 struct CompassView: View {
     @Binding var showSettings: Bool
     @StateObject private var locationManager = LocationManager()
+    @StateObject private var geocodingService = GeocodingService.shared
     
     @State private var selectedDestination = 0
     @State private var addresses: [String] = []
+    @State private var destinationCoordinates: [CLLocationCoordinate2D] = []
     @State private var angle: Double = 0
     @State private var distance: Double = 0
     
@@ -86,18 +88,39 @@ struct CompassView: View {
     
     private func loadAddresses() {
         var loadedAddresses: [String] = []
+        var loadedCoordinates: [CLLocationCoordinate2D] = []
         
         if let addr1 = UserDefaults.standard.string(forKey: "address1"), !addr1.isEmpty {
             loadedAddresses.append(addr1)
+            geocodeAndStoreAddress(addr1, index: loadedCoordinates.count)
+            loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
         }
         if let addr2 = UserDefaults.standard.string(forKey: "address2"), !addr2.isEmpty {
             loadedAddresses.append(addr2)
+            geocodeAndStoreAddress(addr2, index: loadedCoordinates.count)
+            loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
         }
         if let addr3 = UserDefaults.standard.string(forKey: "address3"), !addr3.isEmpty {
             loadedAddresses.append(addr3)
+            geocodeAndStoreAddress(addr3, index: loadedCoordinates.count)
+            loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
         }
         
         addresses = loadedAddresses
+        destinationCoordinates = loadedCoordinates
+    }
+    
+    private func geocodeAndStoreAddress(_ address: String, index: Int) {
+        geocodingService.geocodeAddress(address) { [weak self] coordinate in
+            guard let self = self, let coordinate = coordinate else { return }
+            
+            DispatchQueue.main.async {
+                if index < self.destinationCoordinates.count {
+                    self.destinationCoordinates[index] = coordinate
+                    self.updateDirection()
+                }
+            }
+        }
     }
     
     private func startLocationUpdates() {
@@ -107,10 +130,38 @@ struct CompassView: View {
     }
     
     private func updateDirection() {
-        // 这里需要实现方向计算逻辑
-        // 暂时使用模拟数据
-        angle = Double.random(in: 0...360)
-        distance = Double.random(in: 100...5000)
+        guard selectedDestination < destinationCoordinates.count else { return }
+        
+        let destinationCoord = destinationCoordinates[selectedDestination]
+        
+        // 如果还没有获取到目标坐标，使用默认值
+        guard destinationCoord.latitude != 0 && destinationCoord.longitude != 0 else {
+            // 使用名古屋市中心作为默认位置进行演示
+            let nagoyaCenter = CLLocationCoordinate2D(latitude: 35.1815, longitude: 136.9066)
+            calculateDirectionAndDistance(to: nagoyaCenter)
+            return
+        }
+        
+        calculateDirectionAndDistance(to: destinationCoord)
+    }
+    
+    private func calculateDirectionAndDistance(to destination: CLLocationCoordinate2D) {
+        // 使用当前位置，如果没有则使用模拟位置（名古屋站附近）
+        let currentCoord: CLLocationCoordinate2D
+        if let current = locationManager.currentLocation?.coordinate {
+            currentCoord = current
+        } else {
+            // 模拟位置：名古屋站
+            currentCoord = CLLocationCoordinate2D(latitude: 35.1706, longitude: 136.8816)
+        }
+        
+        // 计算距离（米）
+        let calculatedDistance = geocodingService.calculateDistance(from: currentCoord, to: destination)
+        distance = calculatedDistance
+        
+        // 计算方向角（度）
+        let calculatedBearing = geocodingService.calculateBearing(from: currentCoord, to: destination)
+        angle = calculatedBearing
     }
 }
 

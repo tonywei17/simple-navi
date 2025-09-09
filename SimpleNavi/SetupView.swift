@@ -9,8 +9,19 @@ struct SetupView: View {
     @State private var address3 = ""
     @State private var selectedAddressIndex = 0
     @State private var isLoading = false
+    @State private var showSuggestedAddresses = false
     
     private let addressLabels = ["家", "公司", "朋友家"]
+    private let suggestedNagoyaAddresses = [
+        "愛知県名古屋市中区栄3-15-33",
+        "愛知県名古屋市東区泉",
+        "愛知県名古屋市千種区今池1-6-3",
+        "愛知県名古屋市昭和区御器所",
+        "愛知県名古屋市天白区植田",
+        "名古屋駅",
+        "名古屋城",
+        "熱田神宮"
+    ]
     
     var body: some View {
         VStack(spacing: 30) {
@@ -43,6 +54,49 @@ struct SetupView: View {
                 )
             }
             .padding(.horizontal, 20)
+            
+            // 名古屋地址建议按钮
+            Button("使用名古屋示例地址") {
+                showSuggestedAddresses.toggle()
+            }
+            .font(.subheadline)
+            .foregroundColor(.blue)
+            
+            if showSuggestedAddresses {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("名古屋地区常用地址：")
+                        .font(.headline)
+                        .padding(.bottom, 5)
+                    
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                        ForEach(suggestedNagoyaAddresses, id: \.self) { address in
+                            Button(action: {
+                                if address1.isEmpty {
+                                    address1 = address
+                                } else if address2.isEmpty {
+                                    address2 = address
+                                } else if address3.isEmpty {
+                                    address3 = address
+                                }
+                                showSuggestedAddresses = false
+                            }) {
+                                Text(address)
+                                    .font(.caption)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(8)
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+                .padding(.horizontal, 20)
+            }
             
             Button(action: saveAddresses) {
                 if isLoading {
