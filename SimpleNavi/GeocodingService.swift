@@ -30,6 +30,10 @@ class GeocodingService: ObservableObject {
         "愛知県名古屋市熱田区神宮1-1-1": CLLocationCoordinate2D(latitude: 35.1282, longitude: 136.9070),
         "熱田神宮": CLLocationCoordinate2D(latitude: 35.1282, longitude: 136.9070),
         
+        // 用户具体地址
+        "愛知県名古屋市熱田区明野町2-10": CLLocationCoordinate2D(latitude: 35.1205, longitude: 136.9025),
+        "愛知県尾張旭市緑町緑丘-100-14-10": CLLocationCoordinate2D(latitude: 35.2164, longitude: 137.0350),
+        
         // 住宅区域
         "愛知県名古屋市千種区今池1-6-3": CLLocationCoordinate2D(latitude: 35.1649, longitude: 136.9280),
         "愛知県名古屋市昭和区御器所": CLLocationCoordinate2D(latitude: 35.1463, longitude: 136.9342),
@@ -51,6 +55,19 @@ class GeocodingService: ObservableObject {
     ]
     
     func geocodeAddress(_ address: String, completion: @escaping (CLLocationCoordinate2D?) -> Void) {
+        // 使用日本地址管理器进行更智能的地理编码
+        JapaneseAddressManager.shared.geocodeAddress(address) { result in
+            switch result {
+            case .success(let coordinate):
+                completion(coordinate)
+            case .failure:
+                // 如果失败，尝试预设的名古屋地址
+                self.fallbackToPresetAddresses(address, completion: completion)
+            }
+        }
+    }
+    
+    private func fallbackToPresetAddresses(_ address: String, completion: @escaping (CLLocationCoordinate2D?) -> Void) {
         // 首先检查是否有预设的名古屋地址
         if let coordinate = nagoyaAddresses[address] {
             completion(coordinate)
@@ -65,25 +82,8 @@ class GeocodingService: ObservableObject {
             }
         }
         
-        // 如果没有预设数据，使用系统地理编码服务
-        geocoder.geocodeAddressString(address) { [weak self] placemarks, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    print("Geocoding error: \(error.localizedDescription)")
-                    // 如果地理编码失败，返回名古屋市中心作为默认位置
-                    completion(CLLocationCoordinate2D(latitude: 35.1815, longitude: 136.9066))
-                    return
-                }
-                
-                if let placemark = placemarks?.first,
-                   let location = placemark.location {
-                    completion(location.coordinate)
-                } else {
-                    // 如果没有结果，返回默认的名古屋位置
-                    completion(CLLocationCoordinate2D(latitude: 35.1815, longitude: 136.9066))
-                }
-            }
-        }
+        // 如果都没有匹配，返回名古屋市中心作为默认位置
+        completion(CLLocationCoordinate2D(latitude: 35.1815, longitude: 136.9066))
     }
     
     // 获取建议的名古屋地址列表（用于用户参考）

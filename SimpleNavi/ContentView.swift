@@ -7,7 +7,7 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             if isFirstLaunch || showSettings {
-                SetupView(isFirstLaunch: $isFirstLaunch, showSettings: $showSettings)
+                SetupViewSimple(isFirstLaunch: $isFirstLaunch, showSettings: $showSettings)
             } else {
                 CompassView(showSettings: $showSettings)
             }

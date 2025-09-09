@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreLocation
 
 struct SetupView: View {
     @Binding var isFirstLaunch: Bool
@@ -278,6 +279,13 @@ struct ModernAddressInputField: View {
     let isRequired: Bool
     
     @State private var isFocused = false
+    @State private var suggestions: [String] = []
+    @State private var showSuggestions = false
+    @State private var showMapConfirm = false
+    @State private var confirmedAddress = ""
+    @State private var confirmedCoordinate: CLLocationCoordinate2D?
+    
+    @StateObject private var addressManager = JapaneseAddressManager.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -296,8 +304,39 @@ struct ModernAddressInputField: View {
                 Spacer()
             }
             
-            TextField(placeholder, text: $address)
-                .font(.system(size: 16, weight: .medium))
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    TextField(placeholder, text: $address)
+                        .font(.system(size: 16, weight: .medium))
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .onChange(of: address) { newValue in
+                            updateSuggestions(for: newValue)
+                        }
+                        .onSubmit {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isFocused = false
+                                showSuggestions = false
+                            }
+                        }
+                    
+                    // 地图确认按钮
+                    if !address.isEmpty {
+                        Button(action: {
+                            showMapConfirm = true
+                        }) {
+                            Image(systemName: "map.fill")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.blue)
+                                .padding(8)
+                                .background(
+                                    Circle()
+                                        .fill(Color.blue.opacity(0.1))
+                                )
+                        }
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 16)
                 .background(
@@ -308,7 +347,7 @@ struct ModernAddressInputField: View {
                                 .stroke(
                                     isFocused 
                                     ? iconColor 
-                                    : Color.clear, 
+                                    : (addressManager.isJapaneseAddress(address) ? Color.green : Color.clear), 
                                     lineWidth: 2
                                 )
                         )
@@ -318,13 +357,88 @@ struct ModernAddressInputField: View {
                         isFocused = true
                     }
                 }
-                .onSubmit {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isFocused = false
-                    }
-                }
                 .scaleEffect(isFocused ? 1.02 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: isFocused)
+                
+                // 地址格式提示
+                if !address.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: addressManager.isJapaneseAddress(address) ? "checkmark.circle.fill" : "info.circle.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(addressManager.isJapaneseAddress(address) ? .green : .orange)
+                        
+                        Text(addressManager.isJapaneseAddress(address) ? "日本地址格式正确" : "建议使用完整的日本地址格式")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+                
+                // 智能地址建议
+                if showSuggestions && !suggestions.isEmpty {
+                    VStack(spacing: 8) {
+                        HStack {
+                            Image(systemName: "lightbulb.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.orange)
+                            Text("地址建议")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Button("隐藏") {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showSuggestions = false
+                                }
+                            }
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.blue)
+                        }
+                        
+                        LazyVStack(spacing: 6) {
+                            ForEach(suggestions.prefix(3), id: \.self) { suggestion in
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        address = suggestion
+                                        showSuggestions = false
+                                    }
+                                }) {
+                                    HStack {
+                                        Image(systemName: "mappin")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.blue)
+                                        Text(suggestion)
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.primary)
+                                            .multilineTextAlignment(.leading)
+                                        Spacer()
+                                        Image(systemName: "arrow.up.left")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(.blue)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Color(.systemGray6))
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
         }
         .padding(20)
         .background(
@@ -332,6 +446,33 @@ struct ModernAddressInputField: View {
                 .fill(Color(.systemBackground))
                 .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
         )
+        .sheet(isPresented: $showMapConfirm) {
+            AddressMapConfirmView(
+                address: address,
+                isPresented: $showMapConfirm,
+                confirmedAddress: $confirmedAddress,
+                confirmedCoordinate: $confirmedCoordinate
+            )
+            .onDisappear {
+                if !confirmedAddress.isEmpty {
+                    address = confirmedAddress
+                }
+            }
+        }
+    }
+    
+    private func updateSuggestions(for input: String) {
+        guard !input.isEmpty else {
+            showSuggestions = false
+            suggestions = []
+            return
+        }
+        
+        suggestions = addressManager.getAddressSuggestions(for: input)
+        
+        withAnimation(.easeInOut(duration: 0.3)) {
+            showSuggestions = !suggestions.isEmpty
+        }
     }
 }
 
