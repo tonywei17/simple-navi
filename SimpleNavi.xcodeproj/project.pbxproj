@@ -19,6 +19,7 @@
 		1A1A1A321A1A1A32 /* SetupViewSimple.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A311A1A1A31 /* SetupViewSimple.swift */; };
 		1A1A1A341A1A1A34 /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A331A1A1A35 /* LocalizationManager.swift */; };
 		1A1A1A361A1A1A36 /* LanguageSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A351A1A1A37 /* LanguageSelectionView.swift */; };
+		1A1A1A381A1A1A38 /* DonationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A371A1A1A39 /* DonationView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		1A1A1A331A1A1A33 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1A1A1A331A1A1A35 /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationManager.swift; sourceTree = "<group>"; };
 		1A1A1A351A1A1A37 /* LanguageSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageSelectionView.swift; sourceTree = "<group>"; };
+		1A1A1A371A1A1A39 /* DonationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DonationView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,6 +81,7 @@
 				1A1A1A2F1A1A1A2F /* AddressMapConfirmView.swift */,
 				1A1A1A331A1A1A35 /* LocalizationManager.swift */,
 				1A1A1A351A1A1A37 /* LanguageSelectionView.swift */,
+				1A1A1A371A1A1A39 /* DonationView.swift */,
 				1A1A1A1D1A1A1A1D /* Assets.xcassets */,
 				1A1A1A1F1A1A1A1F /* Preview Content */,
 			);
@@ -171,6 +174,7 @@
 				1A1A1A321A1A1A32 /* SetupViewSimple.swift in Sources */,
 				1A1A1A341A1A1A34 /* LocalizationManager.swift in Sources */,
 				1A1A1A361A1A1A36 /* LanguageSelectionView.swift in Sources */,
+				1A1A1A381A1A1A38 /* DonationView.swift in Sources */,
 				1A1A1A1A1A1A1A1A /* SimpleNaviApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

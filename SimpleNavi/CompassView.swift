@@ -12,6 +12,7 @@ struct CompassView: View {
     @State private var destinationCoordinates: [CLLocationCoordinate2D] = []
     @State private var angle: Double = 0
     @State private var distance: Double = 0
+    @State private var showDonation = false
     
     private var destinationLabels: [String] {
         [
@@ -40,6 +41,30 @@ struct CompassView: View {
                     VStack(spacing: 30) {
                         // 顶部导航栏
                         HStack {
+                            // 打赏按钮
+                            Button(action: { showDonation = true }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "heart.fill")
+                                        .font(.system(size: 14, weight: .medium))
+                                    Text(localized: .donate)
+                                        .font(.system(size: 16, weight: .medium))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [.orange, .red],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
+                                )
+                            }
+                            
                             Spacer()
                             
                             Button(action: { showSettings = true }) {
@@ -268,6 +293,9 @@ struct CompassView: View {
         .onChange(of: locationManager.currentHeading) {
             // 设备朝向变化时，需要重新计算箭头相对方向
             // 罗盘刻度保持地理方向，箭头也保持地理方向
+        }
+        .sheet(isPresented: $showDonation) {
+            DonationView(isPresented: $showDonation)
         }
     }
     

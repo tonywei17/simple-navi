@@ -105,6 +105,22 @@ enum LocalizedStringKey: String, CaseIterable {
     case language = "language"
     case selectLanguage = "select_language"
     
+    // 打赏相关
+    case donate = "donate"
+    case supportDeveloper = "support_developer"
+    case donateMessage = "donate_message"
+    case coffeeRegular = "coffee_regular"
+    case coffeeLatte = "coffee_latte"
+    case afternoonTea = "afternoon_tea"
+    case coffeeRegularDesc = "coffee_regular_desc"
+    case coffeeLatteDesc = "coffee_latte_desc"
+    case afternoonTeaDesc = "afternoon_tea_desc"
+    case customAmount = "custom_amount"
+    case thankYou = "thank_you"
+    case purchaseComplete = "purchase_complete"
+    case purchaseFailed = "purchase_failed"
+    case restorePurchases = "restore_purchases"
+    
     var stringKey: String {
         return self.rawValue
     }
@@ -151,7 +167,22 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .searchingAddress: "Searching address...",
         
         .language: "Language",
-        .selectLanguage: "Select Language"
+        .selectLanguage: "Select Language",
+        
+        .donate: "Donate",
+        .supportDeveloper: "Support Developer",
+        .donateMessage: "This app is completely free and ad-free. If it has helped you and your family, please consider supporting the developer.",
+        .coffeeRegular: "Regular Coffee",
+        .coffeeLatte: "Premium Latte", 
+        .afternoonTea: "Afternoon Tea",
+        .coffeeRegularDesc: "Stay alert",
+        .coffeeLatteDesc: "Full of energy",
+        .afternoonTeaDesc: "Thank you for your generosity",
+        .customAmount: "Custom Amount",
+        .thankYou: "Thank You!",
+        .purchaseComplete: "Purchase completed successfully",
+        .purchaseFailed: "Purchase failed",
+        .restorePurchases: "Restore Purchases"
     ],
     
     .chinese: [
@@ -193,7 +224,22 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .searchingAddress: "搜索地址中...",
         
         .language: "语言",
-        .selectLanguage: "选择语言"
+        .selectLanguage: "选择语言",
+        
+        .donate: "打赏",
+        .supportDeveloper: "支持开发者",
+        .donateMessage: "这个应用完全免费，也没有广告。如果它帮助到了您和您的家人，请考虑支持开发者。",
+        .coffeeRegular: "一杯普通咖啡",
+        .coffeeLatte: "一杯精品拿铁",
+        .afternoonTea: "一份惬意下午茶",
+        .coffeeRegularDesc: "保持清醒",
+        .coffeeLatteDesc: "注入满满能量", 
+        .afternoonTeaDesc: "感谢您的慷慨",
+        .customAmount: "自定义金额",
+        .thankYou: "谢谢！",
+        .purchaseComplete: "购买成功",
+        .purchaseFailed: "购买失败",
+        .restorePurchases: "恢复购买"
     ],
     
     .japanese: [
@@ -235,7 +281,22 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .searchingAddress: "住所を検索中...",
         
         .language: "言語",
-        .selectLanguage: "言語を選択"
+        .selectLanguage: "言語を選択",
+        
+        .donate: "寄付",
+        .supportDeveloper: "開発者をサポート",
+        .donateMessage: "このアプリは完全無料で広告もありません。あなたやご家族のお役に立ちましたら、開発者をサポートしていただけますと幸いです。",
+        .coffeeRegular: "普通のコーヒー",
+        .coffeeLatte: "プレミアムラテ",
+        .afternoonTea: "優雅なアフタヌーンティー",
+        .coffeeRegularDesc: "目覚めを保つ",
+        .coffeeLatteDesc: "エネルギー満タン",
+        .afternoonTeaDesc: "ご寛大なご支援に感謝",
+        .customAmount: "カスタム金額",
+        .thankYou: "ありがとうございます！",
+        .purchaseComplete: "購入が完了しました",
+        .purchaseFailed: "購入に失敗しました",
+        .restorePurchases: "購入を復元"
     ]
 ]
 
