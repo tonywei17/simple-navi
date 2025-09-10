@@ -264,6 +264,10 @@ struct CompassView: View {
                 updateDirection()
             }
         }
+        // 实时位置变化时，刷新距离与方向（使用发布者，避免 Equatable 限制）
+        .onReceive(locationManager.$currentLocation) { _ in
+            updateDirection()
+        }
         .onChange(of: selectedDestination) {
             updateDirection()
         }
