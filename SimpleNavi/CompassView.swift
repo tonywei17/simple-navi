@@ -14,6 +14,7 @@ struct CompassView: View {
     @State private var angle: Double = 0
     @State private var distance: Double = 0
     @State private var showDonation = false
+    @State private var spinOffset: Double = 0 // 点击箭头时用于做一圈旋转的增量角度
     
     private var destinationLabels: [String] {
         [
@@ -133,8 +134,18 @@ struct CompassView: View {
                                 .shadow(color: .blue.opacity(0.5), radius: 4)
                             
                             // 现代化箭头 - 优先使用自定义图片资源，其次回退到 SF Symbol
-                            CompassArrow(rotation: angle - locationManager.currentHeading)
+                            CompassArrow(rotation: angle - locationManager.currentHeading + spinOffset)
+                                .contentShape(Circle())
+                                .onTapGesture {
+                                    // 趣味动效：点击时顺时针旋转一圈，带一点弹性
+                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.55, blendDuration: 0.2)) {
+                                        spinOffset += 360
+                                    }
+                                }
+                                // 位置/朝向变化的平滑动画
                                 .animation(.spring(response: 0.6, dampingFraction: 0.8), value: angle - locationManager.currentHeading)
+                                // 点击旋转动效的弹性动画
+                                .animation(.spring(response: 0.6, dampingFraction: 0.55, blendDuration: 0.2), value: spinOffset)
                         }
                         .padding(.horizontal, 20)
                         
