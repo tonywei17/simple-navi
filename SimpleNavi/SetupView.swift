@@ -10,6 +10,7 @@ struct SetupView: View {
     @AppStorage(UDKeys.address3) private var address3 = ""
     @State private var isLoading = false
     @State private var showSuggestedAddresses = false
+    private let enableNagoyaSamples = false
     
     private var suggestedNagoyaAddresses: [String] {
         GeocodingService.shared.getSuggestedNagoyaAddresses()
@@ -32,6 +33,28 @@ struct SetupView: View {
                 
                 ScrollView {
                     VStack(spacing: 30) {
+                        // 顶部返回按钮（非首次启动才显示）
+                        HStack {
+                            if !isFirstLaunch {
+                                Button(action: { showSettings = false }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "chevron.left")
+                                            .font(.system(size: 14, weight: .semibold))
+                                        Text(localized: .back)
+                                            .font(.system(size: 14, weight: .medium))
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.blue.opacity(0.1))
+                                    )
+                                }
+                                .foregroundColor(.blue)
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
                         // 顶部标题卡片
                         VStack(spacing: 16) {
                             Image(systemName: "location.circle.fill")
@@ -102,86 +125,89 @@ struct SetupView: View {
                         }
                         .padding(.horizontal, 20)
             
-                        // 名古屋地址建议卡片
-                        VStack(spacing: 16) {
-                            Button(action: { 
-                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                    showSuggestedAddresses.toggle()
-                                }
-                            }) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "mappin.and.ellipse")
-                                        .font(.system(size: 20, weight: .medium))
-                                    Text(localized: .useNagoyaSamples)
-                                        .font(.system(size: 18, weight: .medium))
-                                    Spacer()
-                                    Image(systemName: showSuggestedAddresses ? "chevron.up" : "chevron.down")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .rotationEffect(.degrees(showSuggestedAddresses ? 0 : 0))
-                                        .animation(.easeInOut(duration: 0.2), value: showSuggestedAddresses)
-                                }
-                                .foregroundColor(.blue)
-                                .padding(20)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.blue.opacity(0.1))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                        )
-                                )
-                            }
-                            
-                            if showSuggestedAddresses {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    HStack {
-                                        Image(systemName: "location.fill")
-                                            .foregroundColor(.green)
-                                        Text(localized: .commonNagoyaAddresses)
-                                            .font(.system(size: 18, weight: .semibold))
-                                        Spacer()
+                        // 名古屋示例地址（默认隐藏）
+                        if enableNagoyaSamples {
+                            // 名古屋地址建议卡片
+                            VStack(spacing: 16) {
+                                Button(action: { 
+                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                        showSuggestedAddresses.toggle()
                                     }
-                                    
-                                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                                        ForEach(suggestedNagoyaAddresses, id: \.self) { address in
-                                            Button(action: {
-                                                withAnimation(.easeInOut(duration: 0.3)) {
-                                                    if address1.isEmpty {
-                                                        address1 = address
-                                                    } else if address2.isEmpty {
-                                                        address2 = address
-                                                    } else if address3.isEmpty {
-                                                        address3 = address
+                                }) {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "mappin.and.ellipse")
+                                            .font(.system(size: 20, weight: .medium))
+                                        Text(localized: .useNagoyaSamples)
+                                            .font(.system(size: 18, weight: .medium))
+                                        Spacer()
+                                        Image(systemName: showSuggestedAddresses ? "chevron.up" : "chevron.down")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .rotationEffect(.degrees(showSuggestedAddresses ? 0 : 0))
+                                            .animation(.easeInOut(duration: 0.2), value: showSuggestedAddresses)
+                                    }
+                                    .foregroundColor(.blue)
+                                    .padding(20)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color.blue.opacity(0.1))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 16)
+                                                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                            )
+                                    )
+                                }
+                                
+                                if showSuggestedAddresses {
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        HStack {
+                                            Image(systemName: "location.fill")
+                                                .foregroundColor(.green)
+                                            Text(localized: .commonNagoyaAddresses)
+                                                .font(.system(size: 18, weight: .semibold))
+                                            Spacer()
+                                        }
+                                        
+                                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                                            ForEach(suggestedNagoyaAddresses, id: \.self) { address in
+                                                Button(action: {
+                                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                                        if address1.isEmpty {
+                                                            address1 = address
+                                                        } else if address2.isEmpty {
+                                                            address2 = address
+                                                        } else if address3.isEmpty {
+                                                            address3 = address
+                                                        }
+                                                        showSuggestedAddresses = false
                                                     }
-                                                    showSuggestedAddresses = false
+                                                }) {
+                                                    VStack(alignment: .leading, spacing: 8) {
+                                                        Text(address)
+                                                            .font(.system(size: 14, weight: .medium))
+                                                            .multilineTextAlignment(.leading)
+                                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                                            .lineLimit(2)
+                                                    }
+                                                    .padding(12)
+                                                    .frame(maxWidth: .infinity, minHeight: 60)
+                                                    .background(Color.white)
+                                                    .cornerRadius(12)
+                                                    .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                                                 }
-                                            }) {
-                                                VStack(alignment: .leading, spacing: 8) {
-                                                    Text(address)
-                                                        .font(.system(size: 14, weight: .medium))
-                                                        .multilineTextAlignment(.leading)
-                                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                                        .lineLimit(2)
-                                                }
-                                                .padding(12)
-                                                .frame(maxWidth: .infinity, minHeight: 60)
-                                                .background(Color.white)
-                                                .cornerRadius(12)
-                                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                                                .foregroundColor(.primary)
                                             }
-                                            .foregroundColor(.primary)
                                         }
                                     }
+                                    .padding(20)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color(.systemBackground))
+                                    )
+                                    .transition(.scale.combined(with: .opacity))
                                 }
-                                .padding(20)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color(.systemBackground))
-                                )
-                                .transition(.scale.combined(with: .opacity))
                             }
+                            .padding(.horizontal, 20)
                         }
-                        .padding(.horizontal, 20)
                         
                         // 现代化保存按钮
                         Button(action: saveAddresses) {
@@ -203,12 +229,14 @@ struct SetupView: View {
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
                                     .fill(
-                                        address1.isEmpty || isLoading 
-                                        ? Color.gray.opacity(0.6)
-                                        : LinearGradient(
-                                            colors: [.blue, .purple],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
+                                        address1.isEmpty || isLoading
+                                        ? AnyShapeStyle(Color.gray.opacity(0.6))
+                                        : AnyShapeStyle(
+                                            LinearGradient(
+                                                colors: [.blue, .purple],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
                                         )
                                     )
                                     .shadow(

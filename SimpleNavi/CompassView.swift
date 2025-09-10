@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import UIKit
 
 struct CompassView: View {
     @Binding var showSettings: Bool
@@ -39,53 +40,6 @@ struct CompassView: View {
                 
                 ScrollView {
                     VStack(spacing: 30) {
-                        // 顶部导航栏
-                        HStack {
-                            // 打赏按钮
-                            Button(action: { showDonation = true }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "heart.fill")
-                                        .font(.system(size: 14, weight: .medium))
-                                    Text(localized: .donate)
-                                        .font(.system(size: 16, weight: .medium))
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [.orange, .red],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                        .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
-                                )
-                            }
-                            
-                            Spacer()
-                            
-                            Button(action: { showSettings = true }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "gearshape.fill")
-                                        .font(.system(size: 16, weight: .medium))
-                                    Text(localized: .settings)
-                                        .font(.system(size: 18, weight: .medium))
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 25)
-                                        .fill(Color.blue)
-                                        .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
-                                )
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 10)
                         
                         // 目的地卡片
                         if !addresses.isEmpty && selectedDestination < addresses.count {
@@ -166,7 +120,7 @@ struct CompassView: View {
                                     Text(directions[index])
                                         .font(.system(size: 18, weight: .bold))
                                         .foregroundColor(.primary.opacity(0.7))
-                                        .offset(y: -120)
+                                        .offset(y: -100)
                                         .rotationEffect(.degrees(angles[index]))
                                 }
                             }
@@ -178,29 +132,9 @@ struct CompassView: View {
                                 .frame(width: 12, height: 12)
                                 .shadow(color: .blue.opacity(0.5), radius: 4)
                             
-                            // 现代化箭头 - 始终指向地理方向
-                            ZStack {
-                                // 箭头阴影
-                                Image(systemName: "arrow.up")
-                                    .font(.system(size: 70, weight: .bold))
-                                    .foregroundColor(.black.opacity(0.1))
-                                    .offset(x: 2, y: 2)
-                                    .rotationEffect(.degrees(angle - locationManager.currentHeading))
-                                
-                                // 主箭头
-                                Image(systemName: "arrow.up")
-                                    .font(.system(size: 70, weight: .bold))
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            colors: [.red, .orange],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                    )
-                                    .rotationEffect(.degrees(angle - locationManager.currentHeading))
-                                    .shadow(color: .red.opacity(0.3), radius: 8)
-                            }
-                            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: angle - locationManager.currentHeading)
+                            // 现代化箭头 - 优先使用自定义图片资源，其次回退到 SF Symbol
+                            CompassArrow(rotation: angle - locationManager.currentHeading)
+                                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: angle - locationManager.currentHeading)
                         }
                         .padding(.horizontal, 20)
                         
@@ -244,37 +178,10 @@ struct CompassView: View {
                         )
                         .padding(.horizontal, 20)
                         
-                        // 目的地选择器
-                        if addresses.count > 1 {
-                            VStack(spacing: 16) {
-                                HStack {
-                                    Image(systemName: "list.bullet")
-                                        .font(.system(size: 18))
-                                        .foregroundColor(.green)
-                                    Text(localized: .selectDestination)
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                }
-                                
-                                Picker(String(localized: .selectDestination), selection: $selectedDestination) {
-                                    ForEach(0..<min(addresses.count, 3), id: \.self) { index in
-                                        Text(destinationLabels[index])
-                                            .font(.system(size: 18, weight: .medium))
-                                            .tag(index)
-                                    }
-                                }
-                                .pickerStyle(SegmentedPickerStyle())
-                                .scaleEffect(1.1)
-                            }
-                            .padding(20)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(Color(.systemBackground))
-                                    .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
-                            )
+                        // 底部地址图标切换
+                        destinationIconSwitcher
                             .padding(.horizontal, 20)
-                        }
+                            .padding(.bottom, 8)
                         
                         // 底部间距
                         Color.clear
@@ -283,10 +190,67 @@ struct CompassView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .top) {
+            HStack {
+                // 打赏按钮
+                Button(action: { showDonation = true }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 16, weight: .medium))
+                        Text(localized: .donate)
+                            .font(.system(size: 18, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 25)
+                            .fill(
+                                LinearGradient(
+                                    colors: [.orange, .red],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Spacer()
+
+                Button(action: { showSettings = true }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 16, weight: .medium))
+                        Text(localized: .settings)
+                            .font(.system(size: 18, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 25)
+                            .fill(Color.blue)
+                            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 6)
+        }
         .onAppear {
             loadAddresses()
             if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
                 startLocationUpdates()
+            }
+        }
+        .onChange(of: showSettings) { newValue in
+            // 当从设置页返回时，刷新地址与方向
+            if newValue == false {
+                loadAddresses()
+                updateDirection()
             }
         }
         .onChange(of: selectedDestination) {
@@ -379,6 +343,150 @@ struct CompassView: View {
         
         // 箭头应该指向目标的绝对地理方向，不需要相对计算
         angle = calculatedBearing
+    }
+
+    // MARK: - Slot helpers and UI
+    private func slotAddress(_ slot: Int) -> String {
+        switch slot {
+        case 0:
+            return UserDefaults.standard.string(forKey: UDKeys.address1) ?? ""
+        case 1:
+            return UserDefaults.standard.string(forKey: UDKeys.address2) ?? ""
+        default:
+            return UserDefaults.standard.string(forKey: UDKeys.address3) ?? ""
+        }
+    }
+
+    private func slotIconName(_ slot: Int) -> String {
+        switch slot {
+        case 0: return "house.fill"
+        case 1: return "building.2.fill"
+        default: return "heart.fill"
+        }
+    }
+
+    private func slotGradient(_ slot: Int) -> LinearGradient {
+        switch slot {
+        case 0:
+            return LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+        case 1:
+            return LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing)
+        default:
+            return LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+    }
+
+    private func selectSlot(_ slot: Int) {
+        let addr = slotAddress(slot)
+        guard !addr.isEmpty else {
+            // 未设置时，引导用户到设置页
+            showSettings = true
+            return
+        }
+        if let idx = addresses.firstIndex(of: addr) {
+            selectedDestination = idx
+            updateDirection()
+        }
+    }
+
+    private var destinationIconSwitcher: some View {
+        let slots = [0, 1, 2]
+        return HStack(spacing: 28) {
+            ForEach(slots, id: \.self) { slot in
+                let addr = slotAddress(slot)
+                let isAvailable = !addr.isEmpty
+                let isSelected = isAvailable && selectedDestination < addresses.count && addresses[selectedDestination] == addr
+                Button(action: { selectSlot(slot) }) {
+                    VStack(spacing: 8) {
+                        ZStack {
+                            Circle()
+                                .fill(slotGradient(slot))
+                                .opacity(isAvailable ? 1.0 : 0.25)
+                                .frame(width: 60, height: 60)
+                                .overlay(
+                                    Circle()
+                                        .stroke(isSelected ? Color.black.opacity(0.18) : Color.clear, lineWidth: 2)
+                                )
+                                .shadow(color: (isSelected ? Color.blue : Color.black).opacity(isAvailable ? 0.12 : 0.0), radius: 8, x: 0, y: 4)
+                            Image(systemName: slotIconName(slot))
+                                .foregroundColor(.white)
+                                .font(.system(size: 22, weight: .semibold))
+                                .opacity(isAvailable ? 1.0 : 0.5)
+                        }
+                        Text(slot == 0 ? String(localized: .home) : slot == 1 ? String(localized: .work) : String(localized: .other))
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(isAvailable ? Color(UIColor.label) : Color(UIColor.tertiaryLabel))
+                            .frame(width: 60)
+                            .minimumScaleFactor(0.9)
+                            .lineLimit(1)
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(!isAvailable)
+            }
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+        )
+    }
+}
+
+// 复用的指南针箭头组件：优先使用自定义图片资源，否则回退到 SF Symbols
+struct CompassArrow: View {
+    let rotation: Double // 传入 angle - currentHeading
+    
+    private func customArrowImage() -> UIImage? {
+        // 支持多种命名，任意一个存在即使用
+        let candidates = [
+            "CompassArrowBlue",
+            "compass_arrow_blue",
+            "compass_arrow",
+            "navigation_arrow_blue"
+        ]
+        for name in candidates {
+            if let img = UIImage(named: name) { return img }
+        }
+        return nil
+    }
+    
+    var body: some View {
+        Group {
+            if let uiImage = customArrowImage() {
+                // 自定义图片（建议图片默认朝向为 45° NE）
+                Image(uiImage: uiImage)
+                    .renderingMode(.original)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 84, height: 84)
+                    .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
+                    .rotationEffect(.degrees(rotation - 45))
+            } else {
+                // 回退到 SF Symbol: location.fill（默认 45° NE）
+                ZStack {
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 70, weight: .bold))
+                        .foregroundColor(.black.opacity(0.12))
+                        .offset(x: 2, y: 2)
+                        .rotationEffect(.degrees(rotation - 45))
+                    
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 70, weight: .bold))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color(red: 0.15, green: 0.6, blue: 1.0), Color.blue],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .rotationEffect(.degrees(rotation - 45))
+                        .shadow(color: Color.blue.opacity(0.35), radius: 8, x: 0, y: 2)
+                }
+            }
+        }
+        .accessibilityLabel(Text("Compass Arrow"))
     }
 }
 

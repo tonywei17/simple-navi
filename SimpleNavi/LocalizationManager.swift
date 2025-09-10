@@ -2,24 +2,6 @@ import Foundation
 import SwiftUI
 import CoreLocation
 
-// Centralized UserDefaults keys to avoid magic strings across the app
-/// UserDefaults keys used across the app. Centralized to avoid typos and make refactors safer.
-enum UDKeys {
-    static let address1 = "address1"
-    static let address2 = "address2"
-    static let address3 = "address3"
-    static let hasSetupAddresses = "hasSetupAddresses"
-    static let isFirstLaunch = "isFirstLaunch" // backward compatibility
-    static let selectedLanguage = "selectedLanguage"
-}
-
-// Centralized commonly used coordinates
-/// Frequently used coordinates for demo defaults and fallbacks.
-enum Coordinates {
-    static let nagoyaCenter = CLLocationCoordinate2D(latitude: 35.1815, longitude: 136.9066)
-    static let nagoyaStation = CLLocationCoordinate2D(latitude: 35.1706, longitude: 136.8816)
-}
-
 // 支持的语言
 enum SupportedLanguage: String, CaseIterable {
     case english = "en"

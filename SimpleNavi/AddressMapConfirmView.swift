@@ -68,6 +68,7 @@ struct AddressMapConfirmView: View {
                                 .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
                         )
                         .padding(.horizontal, 20)
+                        .padding(.top, 24)
                         
                         // 地图视图
                         VStack(spacing: 12) {
