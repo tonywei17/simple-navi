@@ -10,10 +10,9 @@ struct AddressMapConfirmView: View {
     
     @StateObject private var addressManager = JapaneseAddressManager.shared
     @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 35.1815, longitude: 136.9066),
+        center: Coordinates.nagoyaCenter,
         span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
     )
-    @State private var mapItems: [MKMapItem] = []
     @State private var selectedCoordinate: CLLocationCoordinate2D?
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -42,13 +41,13 @@ struct AddressMapConfirmView: View {
                                 Image(systemName: "mappin.circle.fill")
                                     .font(.system(size: 24))
                                     .foregroundColor(.red)
-                                Text("地址确认")
+                                Text(localized: .addressConfirmation)
                                     .font(.system(size: 22, weight: .bold))
                                 Spacer()
                             }
                             
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("输入的地址:")
+                                Text(localized: .targetAddress)
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.secondary)
                                 Text(address)
@@ -73,14 +72,14 @@ struct AddressMapConfirmView: View {
                         // 地图视图
                         VStack(spacing: 12) {
                             HStack {
-                                Text("地图位置确认")
+                                Text(localized: .addressConfirmation)
                                     .font(.system(size: 18, weight: .semibold))
                                 Spacer()
                                 
                                 Button(action: { showLandmarks.toggle() }) {
                                     HStack(spacing: 6) {
                                         Image(systemName: showLandmarks ? "eye.fill" : "eye.slash.fill")
-                                        Text("地标")
+                                        Text(localized: .landmarks)
                                     }
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.blue)
@@ -109,7 +108,7 @@ struct AddressMapConfirmView: View {
                                                         .font(.system(size: 20, weight: .bold))
                                                         .foregroundColor(.white)
                                                 }
-                                                Text("目标地址")
+                                                Text(localized: .targetAddress)
                                                     .font(.system(size: 12, weight: .medium))
                                                     .foregroundColor(.white)
                                                     .padding(.horizontal, 8)
@@ -174,7 +173,7 @@ struct AddressMapConfirmView: View {
                                 HStack(spacing: 12) {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.system(size: 20, weight: .medium))
-                                    Text("确认此地址")
+                                    Text(localized: .confirmAddress)
                                         .font(.system(size: 18, weight: .semibold))
                                 }
                                 .foregroundColor(.white)
@@ -198,7 +197,7 @@ struct AddressMapConfirmView: View {
                             .animation(.easeInOut(duration: 0.2), value: selectedCoordinate != nil)
                             
                             Button(action: { isPresented = false }) {
-                                Text("取消")
+                                Text(localized: .cancel)
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.blue)
                                     .frame(maxWidth: .infinity)
@@ -229,7 +228,7 @@ struct AddressMapConfirmView: View {
             items.append(MapAnnotationItem(
                 id: "main",
                 coordinate: coordinate,
-                name: "目标地址",
+                name: String(localized: .targetAddress),
                 isMainLocation: true
             ))
         }
@@ -241,7 +240,7 @@ struct AddressMapConfirmView: View {
                     items.append(MapAnnotationItem(
                         id: "landmark_\(index)",
                         coordinate: coordinate,
-                        name: landmark.name ?? "地标",
+                        name: landmark.name ?? String(localized: .landmarks),
                         isMainLocation: false
                     ))
                 }

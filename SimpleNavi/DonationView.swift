@@ -336,7 +336,7 @@ struct DonationView: View {
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    Text("Choose your own amount")
+                    Text(String(localized: .customAmountHint))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)

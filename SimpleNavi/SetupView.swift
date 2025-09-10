@@ -5,24 +5,15 @@ struct SetupView: View {
     @Binding var isFirstLaunch: Bool
     @Binding var showSettings: Bool
     
-    @State private var address1 = ""
-    @State private var address2 = ""
-    @State private var address3 = ""
-    @State private var selectedAddressIndex = 0
+    @AppStorage(UDKeys.address1) private var address1 = ""
+    @AppStorage(UDKeys.address2) private var address2 = ""
+    @AppStorage(UDKeys.address3) private var address3 = ""
     @State private var isLoading = false
     @State private var showSuggestedAddresses = false
     
-    private let addressLabels = ["家", "公司", "朋友家"]
-    private let suggestedNagoyaAddresses = [
-        "愛知県名古屋市中区栄3-15-33",
-        "愛知県名古屋市東区泉",
-        "愛知県名古屋市千種区今池1-6-3",
-        "愛知県名古屋市昭和区御器所",
-        "愛知県名古屋市天白区植田",
-        "名古屋駅",
-        "名古屋城",
-        "熱田神宮"
-    ]
+    private var suggestedNagoyaAddresses: [String] {
+        GeocodingService.shared.getSuggestedNagoyaAddresses()
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -54,7 +45,7 @@ struct SetupView: View {
                                 )
                                 .shadow(color: .blue.opacity(0.3), radius: 10)
                             
-                            Text("简单导航设置")
+                            Text(localized: .setupTitle)
                                 .font(.system(size: 32, weight: .bold, design: .rounded))
                                 .foregroundStyle(
                                     LinearGradient(
@@ -64,7 +55,7 @@ struct SetupView: View {
                                     )
                                 )
                             
-                            Text("为您的重要地点设置地址，让回家变得简单")
+                            Text(localized: .setupSubtitle)
                                 .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
@@ -85,27 +76,27 @@ struct SetupView: View {
                             ModernAddressInputField(
                                 icon: "house.fill",
                                 iconColor: .blue,
-                                label: "主要地址 (家)",
+                                label: String(localized: .address1Home),
                                 address: $address1,
-                                placeholder: "请输入家庭地址",
+                                placeholder: String(localized: .enterHomeAddress),
                                 isRequired: true
                             )
                             
                             ModernAddressInputField(
                                 icon: "building.2.fill",
                                 iconColor: .orange,
-                                label: "工作地点 (可选)",
+                                label: String(localized: .address2Work),
                                 address: $address2,
-                                placeholder: "请输入工作地址",
+                                placeholder: String(localized: .enterWorkAddress),
                                 isRequired: false
                             )
                             
                             ModernAddressInputField(
                                 icon: "heart.fill",
                                 iconColor: .pink,
-                                label: "其他地点 (可选)",
+                                label: String(localized: .address3Other),
                                 address: $address3,
-                                placeholder: "请输入第三个地址",
+                                placeholder: String(localized: .enterOtherAddress),
                                 isRequired: false
                             )
                         }
@@ -121,7 +112,7 @@ struct SetupView: View {
                                 HStack(spacing: 12) {
                                     Image(systemName: "mappin.and.ellipse")
                                         .font(.system(size: 20, weight: .medium))
-                                    Text("使用名古屋示例地址")
+                                    Text(localized: .useNagoyaSamples)
                                         .font(.system(size: 18, weight: .medium))
                                     Spacer()
                                     Image(systemName: showSuggestedAddresses ? "chevron.up" : "chevron.down")
@@ -146,7 +137,7 @@ struct SetupView: View {
                                     HStack {
                                         Image(systemName: "location.fill")
                                             .foregroundColor(.green)
-                                        Text("常用名古屋地址")
+                                        Text(localized: .commonNagoyaAddresses)
                                             .font(.system(size: 18, weight: .semibold))
                                         Spacer()
                                     }
@@ -202,7 +193,7 @@ struct SetupView: View {
                                 } else {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.system(size: 20, weight: .medium))
-                                    Text("保存设置")
+                                    Text(localized: .saveSettings)
                                         .font(.system(size: 20, weight: .semibold))
                                 }
                             }
@@ -242,24 +233,12 @@ struct SetupView: View {
                 }
             }
         }
-        .onAppear {
-            loadSavedAddresses()
-        }
-    }
-    
-    private func loadSavedAddresses() {
-        address1 = UserDefaults.standard.string(forKey: "address1") ?? ""
-        address2 = UserDefaults.standard.string(forKey: "address2") ?? ""
-        address3 = UserDefaults.standard.string(forKey: "address3") ?? ""
     }
     
     private func saveAddresses() {
         isLoading = true
         
-        UserDefaults.standard.set(address1, forKey: "address1")
-        UserDefaults.standard.set(address2, forKey: "address2")
-        UserDefaults.standard.set(address3, forKey: "address3")
-        UserDefaults.standard.set(true, forKey: "hasSetupAddresses")
+        UserDefaults.standard.set(true, forKey: UDKeys.hasSetupAddresses)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             isLoading = false
@@ -384,11 +363,11 @@ struct ModernAddressInputField: View {
                             Image(systemName: "lightbulb.fill")
                                 .font(.system(size: 12))
                                 .foregroundColor(.orange)
-                            Text("地址建议")
+                            Text(localized: .addressSuggestions)
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.secondary)
                             Spacer()
-                            Button("隐藏") {
+                            Button(String(localized: .hide)) {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showSuggestions = false
                                 }
@@ -472,25 +451,6 @@ struct ModernAddressInputField: View {
         
         withAnimation(.easeInOut(duration: 0.3)) {
             showSuggestions = !suggestions.isEmpty
-        }
-    }
-}
-
-// 保留旧版本以防兼容性问题
-struct AddressInputField: View {
-    let label: String
-    @Binding var address: String
-    let placeholder: String
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label)
-                .font(.headline)
-                .fontWeight(.medium)
-            
-            TextField(placeholder, text: $address)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .font(.body)
         }
     }
 }

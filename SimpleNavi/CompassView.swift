@@ -285,7 +285,9 @@ struct CompassView: View {
         }
         .onAppear {
             loadAddresses()
-            startLocationUpdates()
+            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
+                startLocationUpdates()
+            }
         }
         .onChange(of: selectedDestination) {
             updateDirection()
@@ -303,17 +305,17 @@ struct CompassView: View {
         var loadedAddresses: [String] = []
         var loadedCoordinates: [CLLocationCoordinate2D] = []
         
-        if let addr1 = UserDefaults.standard.string(forKey: "address1"), !addr1.isEmpty {
+        if let addr1 = UserDefaults.standard.string(forKey: UDKeys.address1), !addr1.isEmpty {
             loadedAddresses.append(addr1)
             geocodeAndStoreAddress(addr1, index: loadedCoordinates.count)
             loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
         }
-        if let addr2 = UserDefaults.standard.string(forKey: "address2"), !addr2.isEmpty {
+        if let addr2 = UserDefaults.standard.string(forKey: UDKeys.address2), !addr2.isEmpty {
             loadedAddresses.append(addr2)
             geocodeAndStoreAddress(addr2, index: loadedCoordinates.count)
             loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
         }
-        if let addr3 = UserDefaults.standard.string(forKey: "address3"), !addr3.isEmpty {
+        if let addr3 = UserDefaults.standard.string(forKey: UDKeys.address3), !addr3.isEmpty {
             loadedAddresses.append(addr3)
             geocodeAndStoreAddress(addr3, index: loadedCoordinates.count)
             loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
@@ -350,7 +352,7 @@ struct CompassView: View {
         // 如果还没有获取到目标坐标，使用默认值
         guard destinationCoord.latitude != 0 && destinationCoord.longitude != 0 else {
             // 使用名古屋市中心作为默认位置进行演示
-            let nagoyaCenter = CLLocationCoordinate2D(latitude: 35.1815, longitude: 136.9066)
+            let nagoyaCenter = Coordinates.nagoyaCenter
             calculateDirectionAndDistance(to: nagoyaCenter)
             return
         }
@@ -365,7 +367,7 @@ struct CompassView: View {
             currentCoord = current
         } else {
             // 模拟位置：名古屋站
-            currentCoord = CLLocationCoordinate2D(latitude: 35.1706, longitude: 136.8816)
+            currentCoord = Coordinates.nagoyaStation
         }
         
         // 计算距离（米）

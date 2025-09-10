@@ -18,7 +18,7 @@ struct ContentView: View {
     }
     
     private func checkFirstLaunch() {
-        isFirstLaunch = !UserDefaults.standard.bool(forKey: "hasSetupAddresses")
+        isFirstLaunch = !UserDefaults.standard.bool(forKey: UDKeys.hasSetupAddresses)
     }
 }
 

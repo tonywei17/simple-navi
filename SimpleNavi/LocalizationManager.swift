@@ -1,5 +1,24 @@
 import Foundation
 import SwiftUI
+import CoreLocation
+
+// Centralized UserDefaults keys to avoid magic strings across the app
+/// UserDefaults keys used across the app. Centralized to avoid typos and make refactors safer.
+enum UDKeys {
+    static let address1 = "address1"
+    static let address2 = "address2"
+    static let address3 = "address3"
+    static let hasSetupAddresses = "hasSetupAddresses"
+    static let isFirstLaunch = "isFirstLaunch" // backward compatibility
+    static let selectedLanguage = "selectedLanguage"
+}
+
+// Centralized commonly used coordinates
+/// Frequently used coordinates for demo defaults and fallbacks.
+enum Coordinates {
+    static let nagoyaCenter = CLLocationCoordinate2D(latitude: 35.1815, longitude: 136.9066)
+    static let nagoyaStation = CLLocationCoordinate2D(latitude: 35.1706, longitude: 136.8816)
+}
 
 // 支持的语言
 enum SupportedLanguage: String, CaseIterable {
@@ -24,19 +43,20 @@ enum SupportedLanguage: String, CaseIterable {
     }
 }
 
-// 本地化管理器
+/// Localization manager responsible for providing localized strings without relying on .strings files.
+/// It keeps an in-memory dictionary for three supported languages and persists the last choice via UserDefaults.
 class LocalizationManager: ObservableObject {
     static let shared = LocalizationManager()
     
     @Published var currentLanguage: SupportedLanguage = .chinese {
         didSet {
-            UserDefaults.standard.set(currentLanguage.rawValue, forKey: "selectedLanguage")
+            UserDefaults.standard.set(currentLanguage.rawValue, forKey: UDKeys.selectedLanguage)
         }
     }
     
     private init() {
         // 从UserDefaults加载保存的语言
-        if let savedLanguage = UserDefaults.standard.string(forKey: "selectedLanguage"),
+        if let savedLanguage = UserDefaults.standard.string(forKey: UDKeys.selectedLanguage),
            let language = SupportedLanguage(rawValue: savedLanguage) {
             currentLanguage = language
         } else {
@@ -53,6 +73,7 @@ class LocalizationManager: ObservableObject {
         }
     }
     
+    /// Return a localized string for the given key, falling back to English if missing.
     func localizedString(_ key: LocalizedStringKey) -> String {
         return localizedStrings[currentLanguage]?[key] ?? localizedStrings[.english]?[key] ?? key.stringKey
     }
@@ -83,6 +104,10 @@ enum LocalizedStringKey: String, CaseIterable {
     case enterOtherAddress = "enter_other_address"
     case saveSettings = "save_settings"
     case confirmOnMap = "confirm_on_map"
+    case useNagoyaSamples = "use_nagoya_samples"
+    case commonNagoyaAddresses = "common_nagoya_addresses"
+    case addressSuggestions = "address_suggestions"
+    case hide = "hide"
     
     // 指南针界面
     case destination = "destination"
@@ -116,6 +141,7 @@ enum LocalizedStringKey: String, CaseIterable {
     case coffeeLatteDesc = "coffee_latte_desc"
     case afternoonTeaDesc = "afternoon_tea_desc"
     case customAmount = "custom_amount"
+    case customAmountHint = "custom_amount_hint"
     case thankYou = "thank_you"
     case purchaseComplete = "purchase_complete"
     case purchaseFailed = "purchase_failed"
@@ -150,6 +176,10 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .enterOtherAddress: "Enter other important address",
         .saveSettings: "Save Settings",
         .confirmOnMap: "Confirm on Map",
+        .useNagoyaSamples: "Use Nagoya sample addresses",
+        .commonNagoyaAddresses: "Common Nagoya Addresses",
+        .addressSuggestions: "Address Suggestions",
+        .hide: "Hide",
         
         .destination: "Destination",
         .distance: "Distance",
@@ -179,6 +209,7 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .coffeeLatteDesc: "Full of energy",
         .afternoonTeaDesc: "Thank you for your generosity",
         .customAmount: "Custom Amount",
+        .customAmountHint: "Choose your own amount",
         .thankYou: "Thank You!",
         .purchaseComplete: "Purchase completed successfully",
         .purchaseFailed: "Purchase failed",
@@ -207,6 +238,10 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .enterOtherAddress: "请输入其他重要地址",
         .saveSettings: "保存设置",
         .confirmOnMap: "在地图上确认地址",
+        .useNagoyaSamples: "使用名古屋示例地址",
+        .commonNagoyaAddresses: "常用名古屋地址",
+        .addressSuggestions: "地址建议",
+        .hide: "隐藏",
         
         .destination: "目的地",
         .distance: "距离",
@@ -236,6 +271,7 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .coffeeLatteDesc: "注入满满能量", 
         .afternoonTeaDesc: "感谢您的慷慨",
         .customAmount: "自定义金额",
+        .customAmountHint: "自定义你希望支持的金额",
         .thankYou: "谢谢！",
         .purchaseComplete: "购买成功",
         .purchaseFailed: "购买失败",
@@ -264,6 +300,10 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .enterOtherAddress: "その他の重要な住所を入力してください",
         .saveSettings: "設定を保存",
         .confirmOnMap: "地図で確認",
+        .useNagoyaSamples: "名古屋のサンプル住所を使用",
+        .commonNagoyaAddresses: "名古屋の一般的な住所",
+        .addressSuggestions: "住所の提案",
+        .hide: "非表示",
         
         .destination: "目的地",
         .distance: "距離",
@@ -293,6 +333,7 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .coffeeLatteDesc: "エネルギー満タン",
         .afternoonTeaDesc: "ご寛大なご支援に感謝",
         .customAmount: "カスタム金額",
+        .customAmountHint: "支援したい金額を自由に設定",
         .thankYou: "ありがとうございます！",
         .purchaseComplete: "購入が完了しました",
         .purchaseFailed: "購入に失敗しました",

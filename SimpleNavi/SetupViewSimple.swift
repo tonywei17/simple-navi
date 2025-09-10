@@ -1,14 +1,13 @@
 import SwiftUI
 import CoreLocation
-import MapKit
 
 struct SetupViewSimple: View {
     @Binding var isFirstLaunch: Bool
     @Binding var showSettings: Bool
     
-    @State private var address1 = ""
-    @State private var address2 = ""
-    @State private var address3 = ""
+    @AppStorage(UDKeys.address1) private var address1 = ""
+    @AppStorage(UDKeys.address2) private var address2 = ""
+    @AppStorage(UDKeys.address3) private var address3 = ""
     @State private var showMapConfirmation = false
     @State private var currentAddressForMap = ""
     @State private var currentAddressIndex = 0
@@ -210,12 +209,10 @@ struct SetupViewSimple: View {
     }
     
     private func saveAddresses() {
-        UserDefaults.standard.set(address1, forKey: "address1")
-        UserDefaults.standard.set(address2, forKey: "address2")
-        UserDefaults.standard.set(address3, forKey: "address3")
+        UserDefaults.standard.set(true, forKey: UDKeys.hasSetupAddresses)
         
         if isFirstLaunch {
-            UserDefaults.standard.set(false, forKey: "isFirstLaunch")
+            UserDefaults.standard.set(false, forKey: UDKeys.isFirstLaunch)
             isFirstLaunch = false
         } else {
             showSettings = false
