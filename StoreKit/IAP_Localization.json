@@ -1,0 +1,61 @@
+{
+  "products": [
+    {
+      "id": "com.simplenavi.simplenavi.tip.small",
+      "type": "consumable",
+      "pricing": { "suggestedTier": 2, "notes": "Approx. $1.99 USD (varies by region)" },
+      "localizations": {
+        "en-US": {
+          "displayName": "Small Tip",
+          "description": "A one-time tip to support development. Thank you!"
+        },
+        "ja-JP": {
+          "displayName": "小額のチップ",
+          "description": "開発を応援いただきありがとうございます。あなたのサポートは大きな励みになります。"
+        },
+        "zh-Hans": {
+          "displayName": "小额打赏",
+          "description": "您的支持是我持续改进的动力，非常感谢！"
+        }
+      }
+    },
+    {
+      "id": "com.simplenavi.simplenavi.tip.medium",
+      "type": "consumable",
+      "pricing": { "suggestedTier": 5, "notes": "Approx. $4.99 USD (varies by region)" },
+      "localizations": {
+        "en-US": {
+          "displayName": "Medium Tip",
+          "description": "A one-time tip to support development. Thank you!"
+        },
+        "ja-JP": {
+          "displayName": "中額のチップ",
+          "description": "開発を応援いただきありがとうございます。あなたのサポートは大きな励みになります。"
+        },
+        "zh-Hans": {
+          "displayName": "中额打赏",
+          "description": "您的支持是我持续改进的动力，非常感谢！"
+        }
+      }
+    },
+    {
+      "id": "com.simplenavi.simplenavi.tip.large",
+      "type": "consumable",
+      "pricing": { "suggestedTier": 10, "notes": "Approx. $9.99 USD (varies by region)" },
+      "localizations": {
+        "en-US": {
+          "displayName": "Large Tip",
+          "description": "A one-time tip to support development. Thank you!"
+        },
+        "ja-JP": {
+          "displayName": "大額のチップ",
+          "description": "開発を応援いただきありがとうございます。あなたのサポートは大きな励みになります。"
+        },
+        "zh-Hans": {
+          "displayName": "大额打赏",
+          "description": "您的支持是我持续改进的动力，非常感谢！"
+        }
+      }
+    }
+  ]
+}

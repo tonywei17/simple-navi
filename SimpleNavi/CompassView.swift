@@ -15,6 +15,8 @@ struct CompassView: View {
     @State private var distance: Double = 0
     @State private var showDonation = false
     @State private var spinOffset: Double = 0 // 点击箭头时用于做一圈旋转的增量角度
+    @State private var arrowRotation: Double = 0 // 基于最短角度差的累计显示角度（不整圈）
+    
     
     private var destinationLabels: [String] {
         [
@@ -134,7 +136,8 @@ struct CompassView: View {
                                 .shadow(color: .blue.opacity(0.5), radius: 4)
                             
                             // 现代化箭头 - 优先使用自定义图片资源，其次回退到 SF Symbol
-                            CompassArrow(rotation: angle - locationManager.currentHeading + spinOffset)
+                            // 使用累计的最短角度差显示值，避免自然转动手机时出现整圈旋转
+                            CompassArrow(rotation: arrowRotation + spinOffset)
                                 .contentShape(Circle())
                                 .onTapGesture {
                                     // 趣味动效：点击时顺时针旋转一圈，带一点弹性
@@ -142,8 +145,8 @@ struct CompassView: View {
                                         spinOffset += 360
                                     }
                                 }
-                                // 位置/朝向变化的平滑动画
-                                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: angle - locationManager.currentHeading)
+                                // 位置/朝向变化的平滑动画（线性、短时长，连续平顺）
+                                .animation(.linear(duration: 0.12), value: arrowRotation)
                                 // 点击旋转动效的弹性动画
                                 .animation(.spring(response: 0.6, dampingFraction: 0.55, blendDuration: 0.2), value: spinOffset)
                         }
@@ -161,24 +164,54 @@ struct CompassView: View {
                                 Spacer()
                             }
                             
-                            HStack {
-                                Text("\(Int(distance))")
-                                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            colors: [.blue, .purple],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
+                            ViewThatFits(in: .horizontal) {
+                                // 方案一：同一行显示（数字 + 单位）
+                                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                    Text("\(Int(distance))")
+                                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.blue, .purple],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
                                         )
-                                    )
-                                    .animation(.easeInOut(duration: 0.3), value: distance)
-                                
-                                Text(localized: .meters)
-                                    .font(.system(size: 24, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                    .padding(.top, 8)
-                                
-                                Spacer()
+                                        .lineLimit(1)
+                                        .fixedSize(horizontal: true, vertical: false)
+                                        .layoutPriority(2)
+                                        .animation(.easeInOut(duration: 0.3), value: distance)
+
+                                    Text(localized: .meters)
+                                        .font(.system(size: 24, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1) // 保证单位整体，不出现局部换行
+                                        .fixedSize(horizontal: true, vertical: false)
+
+                                    Spacer(minLength: 0)
+                                }
+
+                                // 方案二：不够放时，整个单位换到下一行
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("\(Int(distance))")
+                                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.blue, .purple],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .lineLimit(1)
+                                        .fixedSize(horizontal: true, vertical: false)
+                                        .layoutPriority(2)
+                                        .animation(.easeInOut(duration: 0.3), value: distance)
+
+                                    Text(localized: .meters)
+                                        .font(.system(size: 24, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                        .fixedSize(horizontal: true, vertical: false)
+                                }
                             }
                         }
                         .padding(20)
@@ -272,8 +305,8 @@ struct CompassView: View {
             updateDirection()
         }
         .onChange(of: locationManager.currentHeading) {
-            // 设备朝向变化时，需要重新计算箭头相对方向
-            // 罗盘刻度保持地理方向，箭头也保持地理方向
+            // 设备朝向变化时，更新箭头显示角度（按最短角度差累积）
+            updateArrowRotation()
         }
         .sheet(isPresented: $showDonation) {
             DonationView(isPresented: $showDonation)
@@ -356,8 +389,28 @@ struct CompassView: View {
         // 计算方向角（度）
         let calculatedBearing = geocodingService.calculateBearing(from: currentCoord, to: destination)
         
-        // 箭头应该指向目标的绝对地理方向，不需要相对计算
+        // 箭头应该指向目标的绝对地理方向
         angle = calculatedBearing
+        // 更新箭头显示角度（最短角度差累计），防止自然转动时整圈旋转
+        updateArrowRotation()
+    }
+
+    // MARK: - Arrow rotation helpers
+    private func wrapDelta(_ delta: Double) -> Double {
+        // 归一化到 [-180, 180]
+        var d = delta.truncatingRemainder(dividingBy: 360)
+        if d > 180 { d -= 360 }
+        if d < -180 { d += 360 }
+        return d
+    }
+    
+    private func updateArrowRotation() {
+        // 目标相对角 = 目标方位 - 设备朝向
+        let target = angle - locationManager.currentHeading
+        // 与当前显示角度的最短差值
+        let diff = wrapDelta(target - arrowRotation)
+        // 采用最短路径更新显示角度（避免跨 0° 时出现整圈旋转）
+        arrowRotation += diff
     }
 
     // MARK: - Slot helpers and UI
@@ -420,9 +473,20 @@ struct CompassView: View {
                                 .frame(width: 60, height: 60)
                                 .overlay(
                                     Circle()
-                                        .stroke(isSelected ? Color.black.opacity(0.18) : Color.clear, lineWidth: 2)
+                                        .stroke(lineWidth: isSelected ? 4 : 0)
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.blue, .green],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
                                 )
-                                .shadow(color: (isSelected ? Color.blue : Color.black).opacity(isAvailable ? 0.12 : 0.0), radius: 8, x: 0, y: 4)
+                                .shadow(
+                                    color: (isSelected ? Color.green : Color.black).opacity(isAvailable ? 0.18 : 0.0),
+                                    radius: isSelected ? 10 : 8,
+                                    x: 0, y: 4
+                                )
                             Image(systemName: slotIconName(slot))
                                 .foregroundColor(.white)
                                 .font(.system(size: 22, weight: .semibold))
