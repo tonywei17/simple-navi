@@ -204,8 +204,6 @@ struct DonationView: View {
             ForEach(iap.products, id: \.id) { product in
                 donationOptionCard(product: product)
             }
-            
-            customAmountCard()
         }
         .padding(.horizontal, 20)
     }
@@ -300,58 +298,7 @@ struct DonationView: View {
         .disabled(isProcessingPurchase)
     }
     
-    // 自定义金额卡片
-    @ViewBuilder
-    private func customAmountCard() -> some View {
-        Button(action: {
-            // TODO: 实现自定义金额功能
-        }) {
-            HStack(spacing: 16) {
-                // 图标
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.purple, .blue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 60, height: 60)
-                        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                    
-                    Image(systemName: "dollarsign.circle.fill")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundColor(.white)
-                }
-                
-                // 文本信息
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(String(localized: .customAmount))
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    Text(String(localized: .customAmountHint))
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                
-                // 箭头
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.gray)
-            }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 12, x: 0, y: 6)
-            )
-        }
-        .disabled(isProcessingPurchase)
-    }
+    
     
     // 处理打赏
     private func processDonation(product: Product) {

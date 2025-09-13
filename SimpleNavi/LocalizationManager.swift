@@ -69,6 +69,8 @@ enum LocalizedStringKey: String, CaseIterable {
     case save = "save"
     case cancel = "cancel"
     case confirm = "confirm"
+    case yes = "yes"
+    case no = "no"
     case back = "back"
     case next = "next"
     case done = "done"
@@ -131,6 +133,15 @@ enum LocalizedStringKey: String, CaseIterable {
     case purchaseComplete = "purchase_complete"
     case purchaseFailed = "purchase_failed"
     case restorePurchases = "restore_purchases"
+    
+    // 未设置地点提示
+    case locationNotSetTitle = "location_not_set_title"
+    case locationNotSetMessage = "location_not_set_message"
+    case setupNow = "setup_now"
+    case mapAdjustedPrompt = "map_adjusted_prompt"
+    case mapFinalNoticeTitle = "map_final_notice_title"
+    case mapFinalNoticeMessage = "map_final_notice_message"
+    case reverseGeocodeFailed = "reverse_geocode_failed"
     
     var stringKey: String {
         return self.rawValue
@@ -201,6 +212,18 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .purchaseComplete: "Purchase completed successfully",
         .purchaseFailed: "Purchase failed",
         .restorePurchases: "Restore Purchases"
+        ,
+        .locationNotSetTitle: "Location not set",
+        .locationNotSetMessage: "You haven't set up this location yet. Would you like to set it up now?",
+        .setupNow: "Set Up Now"
+        ,
+        .mapAdjustedPrompt: "Map position adjusted. Update address to match?",
+        .yes: "Yes",
+        .no: "No",
+        .mapFinalNoticeTitle: "Notice",
+        .mapFinalNoticeMessage: "Final location will follow the map position. The text address is for display only."
+        ,
+        .reverseGeocodeFailed: "Unable to obtain address for this location. Showing coordinates as fallback."
     ],
     
     .chinese: [
@@ -265,6 +288,18 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .purchaseComplete: "购买成功",
         .purchaseFailed: "购买失败",
         .restorePurchases: "恢复购买"
+        ,
+        .locationNotSetTitle: "未设置此地点",
+        .locationNotSetMessage: "您尚未设置此地点，是否现在去设置？",
+        .setupNow: "去设置"
+        ,
+        .mapAdjustedPrompt: "地图位置已调整，是否需要更新地址？",
+        .yes: "是",
+        .no: "否",
+        .mapFinalNoticeTitle: "提示",
+        .mapFinalNoticeMessage: "最终定位以地图为准，文字只是作为信息展示。"
+        ,
+        .reverseGeocodeFailed: "无法获取该位置的地址，已显示坐标作为替代。"
     ],
     
     .japanese: [
@@ -329,6 +364,18 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .purchaseComplete: "購入が完了しました",
         .purchaseFailed: "購入に失敗しました",
         .restorePurchases: "購入を復元"
+        ,
+        .locationNotSetTitle: "この場所は未設定です",
+        .locationNotSetMessage: "この場所はまだ設定されていません。今すぐ設定しますか？",
+        .setupNow: "設定へ"
+        ,
+        .mapAdjustedPrompt: "地図の位置が調整されました。住所を更新しますか？",
+        .yes: "はい",
+        .no: "いいえ",
+        .mapFinalNoticeTitle: "お知らせ",
+        .mapFinalNoticeMessage: "最終的な位置は地図の位置が優先されます。テキストの住所は参考情報です。"
+        ,
+        .reverseGeocodeFailed: "この位置の住所を取得できませんでした。代わりに座標を表示します。"
     ]
 ]
 

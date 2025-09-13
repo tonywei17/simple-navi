@@ -16,6 +16,7 @@ struct CompassView: View {
     @State private var showDonation = false
     @State private var spinOffset: Double = 0 // 点击箭头时用于做一圈旋转的增量角度
     @State private var arrowRotation: Double = 0 // 基于最短角度差的累计显示角度（不整圈）
+    @State private var showSetupPrompt: Bool = false // 未设置地址时的提示弹窗
     
     
     private var destinationLabels: [String] {
@@ -311,6 +312,15 @@ struct CompassView: View {
         .sheet(isPresented: $showDonation) {
             DonationView(isPresented: $showDonation)
         }
+        // 点击未设置的地点时弹出提示，用户可选择前往设置
+        .alert(String(localized: .locationNotSetTitle), isPresented: $showSetupPrompt) {
+            Button(String(localized: .cancel), role: .cancel) {}
+            Button(String(localized: .setupNow)) {
+                showSettings = true
+            }
+        } message: {
+            Text(String(localized: .locationNotSetMessage))
+        }
     }
     
     private func loadAddresses() {
@@ -447,8 +457,8 @@ struct CompassView: View {
     private func selectSlot(_ slot: Int) {
         let addr = slotAddress(slot)
         guard !addr.isEmpty else {
-            // 未设置时，引导用户到设置页
-            showSettings = true
+            // 未设置时，弹出提示是否前往设置页
+            showSetupPrompt = true
             return
         }
         if let idx = addresses.firstIndex(of: addr) {
@@ -501,7 +511,6 @@ struct CompassView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .disabled(!isAvailable)
             }
         }
         .padding(18)

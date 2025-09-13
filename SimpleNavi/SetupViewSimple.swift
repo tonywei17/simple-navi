@@ -24,6 +24,11 @@ struct SetupViewSimple: View {
         .sheet(isPresented: $showLanguageSelection) {
             LanguageSelectionView(isPresented: $showLanguageSelection)
         }
+        // 自动保存：当地址1有内容时，标记已完成设置
+        .onChange(of: address1) { newValue in
+            let has = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            UserDefaults.standard.set(has, forKey: UDKeys.hasSetupAddresses)
+        }
     }
 
     private var content: some View {
@@ -31,7 +36,6 @@ struct SetupViewSimple: View {
             VStack(spacing: 24) {
                 headerSection
                 addressInputSection
-                actionButtonsSection
             }
             .padding(.top, 12)
             .padding([.leading, .trailing, .bottom])
@@ -128,66 +132,6 @@ struct SetupViewSimple: View {
     }
     
     // 旧的简化输入样式已移除，改为统一使用 ModernAddressInputField
-    
-    private var actionButtonsSection: some View {
-        VStack(spacing: 16) {
-            Button(action: saveAddresses) {
-                HStack(spacing: 12) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 20, weight: .medium))
-                    Text(localized: .saveSettings)
-                        .font(.system(size: 20, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(
-                            address1.isEmpty
-                            ? AnyShapeStyle(Color.gray.opacity(0.6))
-                            : AnyShapeStyle(
-                                LinearGradient(
-                                    colors: [.blue, .purple],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                        )
-                        .shadow(
-                            color: address1.isEmpty ? .clear : .blue.opacity(0.3),
-                            radius: 12, x: 0, y: 6
-                        )
-                )
-            }
-            .disabled(address1.isEmpty)
-            
-            if !isFirstLaunch {
-                Button(action: { showSettings = false }) {
-                    Text(localized: .cancel)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.blue.opacity(0.1))
-                        )
-                }
-            }
-        }
-    }
-    
-    private func saveAddresses() {
-        UserDefaults.standard.set(true, forKey: UDKeys.hasSetupAddresses)
-        
-        if isFirstLaunch {
-            UserDefaults.standard.set(false, forKey: UDKeys.isFirstLaunch)
-            isFirstLaunch = false
-        } else {
-            showSettings = false
-        }
-    }
 }
 
 struct SetupViewSimple_Previews: PreviewProvider {
