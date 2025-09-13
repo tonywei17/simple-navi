@@ -90,6 +90,9 @@ enum LocalizedStringKey: String, CaseIterable {
     case commonNagoyaAddresses = "common_nagoya_addresses"
     case addressSuggestions = "address_suggestions"
     case hide = "hide"
+    // 地址格式提示
+    case addressFormatValid = "address_format_valid"
+    case addressFormatSuggestion = "address_format_suggestion"
     
     // 指南针界面
     case destination = "destination"
@@ -162,6 +165,8 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .commonNagoyaAddresses: "Common Nagoya Addresses",
         .addressSuggestions: "Address Suggestions",
         .hide: "Hide",
+        .addressFormatValid: "Address format is valid",
+        .addressFormatSuggestion: "Consider using a complete address format",
         
         .destination: "Destination",
         .distance: "Distance",
@@ -224,6 +229,8 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .commonNagoyaAddresses: "常用名古屋地址",
         .addressSuggestions: "地址建议",
         .hide: "隐藏",
+        .addressFormatValid: "地址格式正确",
+        .addressFormatSuggestion: "建议使用完整的地址格式",
         
         .destination: "目的地",
         .distance: "距离",
@@ -286,6 +293,8 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .commonNagoyaAddresses: "名古屋の一般的な住所",
         .addressSuggestions: "住所の提案",
         .hide: "非表示",
+        .addressFormatValid: "住所の形式が正しいです",
+        .addressFormatSuggestion: "完全な住所形式の入力をおすすめします",
         
         .destination: "目的地",
         .distance: "距離",

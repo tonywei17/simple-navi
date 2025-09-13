@@ -72,21 +72,7 @@ struct SetupViewSimple: View {
                     .foregroundColor(.blue)
                 }
                 Spacer()
-                Button(action: { showLanguageSelection = true }) {
-                    HStack(spacing: 8) {
-                        Text(localizationManager.currentLanguage.flag)
-                            .font(.system(size: 16))
-                        Text(localizationManager.currentLanguage.displayName)
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.blue.opacity(0.1))
-                    )
-                    .foregroundColor(.blue)
-                }
+                LanguagePickerButton(action: { showLanguageSelection = true })
             }
             
             Image(systemName: "house.circle.fill")

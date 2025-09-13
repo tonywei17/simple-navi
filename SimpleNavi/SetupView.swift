@@ -1,9 +1,80 @@
 import SwiftUI
 import CoreLocation
+import MapKit
+import Contacts
+
+// MARK: - 一次性定位提供者（用于为搜索建议设定当前区域）
+final class OneShotLocationProvider: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published var coordinate: CLLocationCoordinate2D?
+    private let manager = CLLocationManager()
+    private var started = false
+    
+    override init() {
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+    }
+    
+    func start() {
+        guard !started else { return }
+        started = true
+        switch manager.authorizationStatus {
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+        case .authorizedWhenInUse, .authorizedAlways:
+            manager.requestLocation()
+        case .denied, .restricted:
+            break
+        @unknown default:
+            break
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        if status == .authorizedAlways || status == .authorizedWhenInUse {
+            manager.requestLocation()
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        coordinate = locations.last?.coordinate
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        // 静默失败，不影响输入联想
+    }
+}
+
+// 统一的语言选择按钮（带国旗 + 语言名）
+struct LanguagePickerButton: View {
+    let action: () -> Void
+    @ObservedObject private var localizationManager = LocalizationManager.shared
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Text(localizationManager.currentLanguage.flag)
+                    .font(.system(size: 16))
+                Text(localizationManager.currentLanguage.displayName)
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.blue.opacity(0.1))
+            )
+        }
+        .foregroundColor(.blue)
+    }
+}
 
 struct SetupView: View {
     @Binding var isFirstLaunch: Bool
     @Binding var showSettings: Bool
+    
+    @ObservedObject private var localizationManager = LocalizationManager.shared
+    @State private var showLanguageSheet = false
     
     @AppStorage(UDKeys.address1) private var address1 = ""
     @AppStorage(UDKeys.address2) private var address2 = ""
@@ -15,7 +86,7 @@ struct SetupView: View {
     private var suggestedNagoyaAddresses: [String] {
         GeocodingService.shared.getSuggestedNagoyaAddresses()
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -53,6 +124,8 @@ struct SetupView: View {
                                 .foregroundColor(.blue)
                             }
                             Spacer()
+                            // 语言选择按钮（首次进入或设置页均显示）
+                            LanguagePickerButton(action: { showLanguageSheet = true })
                         }
                         .padding(.horizontal, 20)
                         // 顶部标题卡片
@@ -259,6 +332,9 @@ struct SetupView: View {
                             .frame(height: 30)
                     }
                 }
+                .sheet(isPresented: $showLanguageSheet) {
+                    LanguageSelectionView(isPresented: $showLanguageSheet)
+                }
             }
         }
     }
@@ -293,6 +369,9 @@ struct ModernAddressInputField: View {
     @State private var confirmedCoordinate: CLLocationCoordinate2D?
     
     @StateObject private var addressManager = JapaneseAddressManager.shared
+    @StateObject private var searchCompleter = AddressSearchCompleter()
+    @StateObject private var locationProvider = OneShotLocationProvider()
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -374,7 +453,7 @@ struct ModernAddressInputField: View {
                             .font(.system(size: 12))
                             .foregroundColor(addressManager.isJapaneseAddress(address) ? .green : .orange)
                         
-                        Text(addressManager.isJapaneseAddress(address) ? "日本地址格式正确" : "建议使用完整的日本地址格式")
+                        Text(localized: addressManager.isJapaneseAddress(address) ? .addressFormatValid : .addressFormatSuggestion)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
                         
@@ -466,6 +545,16 @@ struct ModernAddressInputField: View {
                 }
             }
         }
+        .onReceive(searchCompleter.$suggestions) { new in
+            suggestions = new
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showSuggestions = !new.isEmpty
+            }
+        }
+        .onAppear {
+            // 获取一次性定位以便按用户位置收敛搜索建议
+            locationProvider.start()
+        }
     }
     
     private func updateSuggestions(for input: String) {
@@ -474,11 +563,106 @@ struct ModernAddressInputField: View {
             suggestions = []
             return
         }
+        // 使用 MapKit 自动补全，结合当前位置（如可用）限定区域
+        // 目标语言对应的 Locale
+        let locale: Locale
+        switch localizationManager.currentLanguage {
+        case .japanese: locale = Locale(identifier: "ja_JP")
+        case .chinese:  locale = Locale(identifier: "zh_Hans_CN")
+        case .english:  locale = Locale(identifier: "en_US")
+        }
+
+        if let coord = locationProvider.coordinate {
+            let region = MKCoordinateRegion(
+                center: coord,
+                latitudinalMeters: 2000,
+                longitudinalMeters: 2000
+            )
+            searchCompleter.update(query: input, region: region, locale: locale)
+        } else {
+            searchCompleter.update(query: input, region: nil, locale: locale)
+        }
+    }
+}
+
+// MARK: - MapKit 搜索补全封装
+final class AddressSearchCompleter: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
+    @Published var suggestions: [String] = []
+    private let completer: MKLocalSearchCompleter
+    private var targetLocale: Locale = .current
+    private var lastRegion: MKCoordinateRegion?
+    
+    override init() {
+        self.completer = MKLocalSearchCompleter()
+        super.init()
+        self.completer.delegate = self
+        if #available(iOS 13.0, *) {
+            self.completer.resultTypes = [.address, .pointOfInterest]
+        }
+    }
+    
+    func update(query: String, region: MKCoordinateRegion? = nil, locale: Locale? = nil) {
+        if let locale = locale { self.targetLocale = locale }
+        self.lastRegion = region
+        if let region = region { completer.region = region }
+        completer.queryFragment = query
+    }
+    
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        let top = Array(completer.results.prefix(3))
+        // 先用原始标题+副标题立即显示
+        var base = top.map { c in
+            c.subtitle.isEmpty ? c.title : "\(c.title) \(c.subtitle)"
+        }
+        DispatchQueue.main.async { [base] in
+            self.suggestions = base
+        }
         
-        suggestions = addressManager.getAddressSuggestions(for: input)
-        
-        withAnimation(.easeInOut(duration: 0.3)) {
-            showSuggestions = !suggestions.isEmpty
+        // 再用 MKLocalSearch 拿到 placemark.postalAddress 并按语言格式化后逐个替换
+        for (idx, completion) in top.enumerated() {
+            let request = MKLocalSearch.Request(completion: completion)
+            if let r = lastRegion { request.region = r }
+            let search = MKLocalSearch(request: request)
+            search.start { response, _ in
+                guard let item = response?.mapItems.first else { return }
+                let coord = item.placemark.coordinate
+                let location = CLLocation(latitude: coord.latitude, longitude: coord.longitude)
+                let geocoder = CLGeocoder()
+                geocoder.reverseGeocodeLocation(location, preferredLocale: self.targetLocale) { placemarks, _ in
+                    if let p = placemarks?.first {
+                        // 优先使用 CLPlacemark 的 postalAddress（按目标语言生成）
+                        if let postal = p.postalAddress {
+                            let f = CNPostalAddressFormatter()
+                            f.style = .mailingAddress
+                            var text = f.string(from: postal).replacingOccurrences(of: "\n", with: " ")
+                            DispatchQueue.main.async { if idx < self.suggestions.count { self.suggestions[idx] = text } }
+                            return
+                        }
+                        // 退化：手工组装（尽可能使用目标语言的字段）
+                        var parts: [String] = []
+                        if let code = p.postalCode { parts.append(code) }
+                        if let admin = p.administrativeArea { parts.append(admin) }
+                        if let locality = p.locality { parts.append(locality) }
+                        if let sub = p.subLocality { parts.append(sub) }
+                        if let thoroughfare = p.thoroughfare { parts.append(thoroughfare) }
+                        if let subThoroughfare = p.subThoroughfare { parts.append(subThoroughfare) }
+                        let text = parts.joined(separator: " ")
+                        DispatchQueue.main.async { if idx < self.suggestions.count { self.suggestions[idx] = text } }
+                    } else if let postal = item.placemark.postalAddress {
+                        // 无 geocode 结果时，格式化 placemark 自带的 postalAddress
+                        let f = CNPostalAddressFormatter()
+                        f.style = .mailingAddress
+                        let text = f.string(from: postal).replacingOccurrences(of: "\n", with: " ")
+                        DispatchQueue.main.async { if idx < self.suggestions.count { self.suggestions[idx] = text } }
+                    }
+                }
+            }
+        }
+    }
+    
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        DispatchQueue.main.async {
+            self.suggestions = []
         }
     }
 }
