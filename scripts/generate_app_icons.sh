@@ -15,15 +15,21 @@ fi
 
 mkdir -p "$DEST"
 
+# Ensure no-alpha by flattening to JPEG first, then generate PNGs from the flattened image
+FLAT_JPG="/tmp/simple-navi-icon-opaque.jpg"
+echo "Flattening source to opaque JPEG (no alpha): $FLAT_JPG"
+sips -s format jpeg "$SRC" --out "$FLAT_JPG" >/dev/null
+INPUT="$FLAT_JPG"
+
 copy() {
   local SIZE="$1" # e.g., 120
   local NAME="$2" # e.g., AppIcon-60@2x-iphone
   echo "Generating $NAME (${SIZE}x${SIZE})"
-  sips -z "$SIZE" "$SIZE" "$SRC" --out "$DEST/$NAME.png" >/dev/null
+  sips -s format png -z "$SIZE" "$SIZE" "$INPUT" --out "$DEST/$NAME.png" >/dev/null
 }
 
-# Marketing icon (1024x1024)
-cp -f "$SRC" "$DEST/AppIcon-1024.png"
+# Marketing icon (1024x1024) — ensure PNG w/o alpha
+sips -s format png -z 1024 1024 "$INPUT" --out "$DEST/AppIcon-1024.png" >/dev/null
 
 # iPhone
 copy 40  "AppIcon-20@2x-iphone"
