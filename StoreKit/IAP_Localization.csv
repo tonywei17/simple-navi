@@ -1,0 +1,10 @@
+product_id,type,price_tier,locale,display_name,description
+com.simplenavi.simplenavi.tip.small,consumable,2,en-US,Small Tip,"A one-time tip to support development. Thank you!"
+com.simplenavi.simplenavi.tip.small,consumable,2,ja-JP,小額のチップ,"開発を応援いただきありがとうございます。あなたのサポートは大きな励みになります。"
+com.simplenavi.simplenavi.tip.small,consumable,2,zh-Hans,小额打赏,"您的支持是我持续改进的动力，非常感谢！"
+com.simplenavi.simplenavi.tip.medium,consumable,5,en-US,Medium Tip,"A one-time tip to support development. Thank you!"
+com.simplenavi.simplenavi.tip.medium,consumable,5,ja-JP,中額のチップ,"開発を応援いただきありがとうございます。あなたのサポートは大きな励みになります。"
+com.simplenavi.simplenavi.tip.medium,consumable,5,zh-Hans,中额打赏,"您的支持是我持续改进的动力，非常感谢！"
+com.simplenavi.simplenavi.tip.large,consumable,10,en-US,Large Tip,"A one-time tip to support development. Thank you!"
+com.simplenavi.simplenavi.tip.large,consumable,10,ja-JP,大額のチップ,"開発を応援いただきありがとうございます。あなたのサポートは大きな励みになります。"
+com.simplenavi.simplenavi.tip.large,consumable,10,zh-Hans,大额打赏,"您的支持是我持续改进的动力，非常感谢！"

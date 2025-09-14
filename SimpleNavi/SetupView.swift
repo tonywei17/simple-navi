@@ -1,29 +1,85 @@
 import SwiftUI
 import CoreLocation
+import MapKit
+
+// MARK: - 一次性定位提供者（用于为搜索建议设定当前区域）
+final class OneShotLocationProvider: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published var coordinate: CLLocationCoordinate2D?
+    private let manager = CLLocationManager()
+    private var started = false
+    
+    override init() {
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+    }
+    
+    func start() {
+        guard !started else { return }
+        started = true
+        switch manager.authorizationStatus {
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+        case .authorizedWhenInUse, .authorizedAlways:
+            manager.requestLocation()
+        case .denied, .restricted:
+            break
+        @unknown default:
+            break
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        if status == .authorizedAlways || status == .authorizedWhenInUse {
+            manager.requestLocation()
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        coordinate = locations.last?.coordinate
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        // 静默失败，不影响输入联想
+    }
+}
+
+// 统一的语言选择按钮（带国旗 + 语言名）
+struct LanguagePickerButton: View {
+    let action: () -> Void
+    @ObservedObject private var localizationManager = LocalizationManager.shared
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Text(localizationManager.currentLanguage.flag)
+                    .font(.system(size: 16))
+                Text(localizationManager.currentLanguage.displayName)
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.blue.opacity(0.1))
+            )
+        }
+        .foregroundColor(.blue)
+    }
+}
 
 struct SetupView: View {
     @Binding var isFirstLaunch: Bool
     @Binding var showSettings: Bool
     
-    @State private var address1 = ""
-    @State private var address2 = ""
-    @State private var address3 = ""
-    @State private var selectedAddressIndex = 0
+    @ObservedObject private var localizationManager = LocalizationManager.shared
+    @State private var showLanguageSheet = false
+    
+    @AppStorage(UDKeys.address1) private var address1 = ""
+    @AppStorage(UDKeys.address2) private var address2 = ""
+    @AppStorage(UDKeys.address3) private var address3 = ""
     @State private var isLoading = false
-    @State private var showSuggestedAddresses = false
-    
-    private let addressLabels = ["家", "公司", "朋友家"]
-    private let suggestedNagoyaAddresses = [
-        "愛知県名古屋市中区栄3-15-33",
-        "愛知県名古屋市東区泉",
-        "愛知県名古屋市千種区今池1-6-3",
-        "愛知県名古屋市昭和区御器所",
-        "愛知県名古屋市天白区植田",
-        "名古屋駅",
-        "名古屋城",
-        "熱田神宮"
-    ]
-    
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -41,6 +97,30 @@ struct SetupView: View {
                 
                 ScrollView {
                     VStack(spacing: 30) {
+                        // 顶部返回按钮（非首次启动才显示）
+                        HStack {
+                            if !isFirstLaunch {
+                                Button(action: { showSettings = false }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "chevron.left")
+                                            .font(.system(size: 14, weight: .semibold))
+                                        Text(localized: .back)
+                                            .font(.system(size: 14, weight: .medium))
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.blue.opacity(0.1))
+                                    )
+                                }
+                                .foregroundColor(.blue)
+                            }
+                            Spacer()
+                            // 语言选择按钮（首次进入或设置页均显示）
+                            LanguagePickerButton(action: { showLanguageSheet = true })
+                        }
+                        .padding(.horizontal, 20)
                         // 顶部标题卡片
                         VStack(spacing: 16) {
                             Image(systemName: "location.circle.fill")
@@ -54,7 +134,7 @@ struct SetupView: View {
                                 )
                                 .shadow(color: .blue.opacity(0.3), radius: 10)
                             
-                            Text("简单导航设置")
+                            Text(localized: .setupTitle)
                                 .font(.system(size: 32, weight: .bold, design: .rounded))
                                 .foregroundStyle(
                                     LinearGradient(
@@ -64,7 +144,7 @@ struct SetupView: View {
                                     )
                                 )
                             
-                            Text("为您的重要地点设置地址，让回家变得简单")
+                            Text(localized: .setupSubtitle)
                                 .font(.system(size: 18, weight: .medium))
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
@@ -85,112 +165,33 @@ struct SetupView: View {
                             ModernAddressInputField(
                                 icon: "house.fill",
                                 iconColor: .blue,
-                                label: "主要地址 (家)",
+                                label: String(localized: .address1Home),
                                 address: $address1,
-                                placeholder: "请输入家庭地址",
+                                placeholder: String(localized: .enterHomeAddress),
                                 isRequired: true
                             )
                             
                             ModernAddressInputField(
                                 icon: "building.2.fill",
                                 iconColor: .orange,
-                                label: "工作地点 (可选)",
+                                label: String(localized: .address2Work),
                                 address: $address2,
-                                placeholder: "请输入工作地址",
+                                placeholder: String(localized: .enterWorkAddress),
                                 isRequired: false
                             )
                             
                             ModernAddressInputField(
                                 icon: "heart.fill",
                                 iconColor: .pink,
-                                label: "其他地点 (可选)",
+                                label: String(localized: .address3Other),
                                 address: $address3,
-                                placeholder: "请输入第三个地址",
+                                placeholder: String(localized: .enterOtherAddress),
                                 isRequired: false
                             )
                         }
                         .padding(.horizontal, 20)
             
-                        // 名古屋地址建议卡片
-                        VStack(spacing: 16) {
-                            Button(action: { 
-                                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                    showSuggestedAddresses.toggle()
-                                }
-                            }) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "mappin.and.ellipse")
-                                        .font(.system(size: 20, weight: .medium))
-                                    Text("使用名古屋示例地址")
-                                        .font(.system(size: 18, weight: .medium))
-                                    Spacer()
-                                    Image(systemName: showSuggestedAddresses ? "chevron.up" : "chevron.down")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .rotationEffect(.degrees(showSuggestedAddresses ? 0 : 0))
-                                        .animation(.easeInOut(duration: 0.2), value: showSuggestedAddresses)
-                                }
-                                .foregroundColor(.blue)
-                                .padding(20)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.blue.opacity(0.1))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                        )
-                                )
-                            }
-                            
-                            if showSuggestedAddresses {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    HStack {
-                                        Image(systemName: "location.fill")
-                                            .foregroundColor(.green)
-                                        Text("常用名古屋地址")
-                                            .font(.system(size: 18, weight: .semibold))
-                                        Spacer()
-                                    }
-                                    
-                                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                                        ForEach(suggestedNagoyaAddresses, id: \.self) { address in
-                                            Button(action: {
-                                                withAnimation(.easeInOut(duration: 0.3)) {
-                                                    if address1.isEmpty {
-                                                        address1 = address
-                                                    } else if address2.isEmpty {
-                                                        address2 = address
-                                                    } else if address3.isEmpty {
-                                                        address3 = address
-                                                    }
-                                                    showSuggestedAddresses = false
-                                                }
-                                            }) {
-                                                VStack(alignment: .leading, spacing: 8) {
-                                                    Text(address)
-                                                        .font(.system(size: 14, weight: .medium))
-                                                        .multilineTextAlignment(.leading)
-                                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                                        .lineLimit(2)
-                                                }
-                                                .padding(12)
-                                                .frame(maxWidth: .infinity, minHeight: 60)
-                                                .background(Color.white)
-                                                .cornerRadius(12)
-                                                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-                                            }
-                                            .foregroundColor(.primary)
-                                        }
-                                    }
-                                }
-                                .padding(20)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color(.systemBackground))
-                                )
-                                .transition(.scale.combined(with: .opacity))
-                            }
-                        }
-                        .padding(.horizontal, 20)
+                        
                         
                         // 现代化保存按钮
                         Button(action: saveAddresses) {
@@ -202,7 +203,7 @@ struct SetupView: View {
                                 } else {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.system(size: 20, weight: .medium))
-                                    Text("保存设置")
+                                    Text(localized: .saveSettings)
                                         .font(.system(size: 20, weight: .semibold))
                                 }
                             }
@@ -212,12 +213,14 @@ struct SetupView: View {
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
                                     .fill(
-                                        address1.isEmpty || isLoading 
-                                        ? Color.gray.opacity(0.6)
-                                        : LinearGradient(
-                                            colors: [.blue, .purple],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
+                                        address1.isEmpty || isLoading
+                                        ? AnyShapeStyle(Color.gray.opacity(0.6))
+                                        : AnyShapeStyle(
+                                            LinearGradient(
+                                                colors: [.blue, .purple],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
                                         )
                                     )
                                     .shadow(
@@ -240,26 +243,17 @@ struct SetupView: View {
                             .frame(height: 30)
                     }
                 }
+                .sheet(isPresented: $showLanguageSheet) {
+                    LanguageSelectionView(isPresented: $showLanguageSheet)
+                }
             }
         }
-        .onAppear {
-            loadSavedAddresses()
-        }
-    }
-    
-    private func loadSavedAddresses() {
-        address1 = UserDefaults.standard.string(forKey: "address1") ?? ""
-        address2 = UserDefaults.standard.string(forKey: "address2") ?? ""
-        address3 = UserDefaults.standard.string(forKey: "address3") ?? ""
     }
     
     private func saveAddresses() {
         isLoading = true
         
-        UserDefaults.standard.set(address1, forKey: "address1")
-        UserDefaults.standard.set(address2, forKey: "address2")
-        UserDefaults.standard.set(address3, forKey: "address3")
-        UserDefaults.standard.set(true, forKey: "hasSetupAddresses")
+        UserDefaults.standard.set(true, forKey: UDKeys.hasSetupAddresses)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             isLoading = false
@@ -279,13 +273,14 @@ struct ModernAddressInputField: View {
     let isRequired: Bool
     
     @State private var isFocused = false
-    @State private var suggestions: [String] = []
-    @State private var showSuggestions = false
+    
     @State private var showMapConfirm = false
     @State private var confirmedAddress = ""
     @State private var confirmedCoordinate: CLLocationCoordinate2D?
     
     @StateObject private var addressManager = JapaneseAddressManager.shared
+    
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -306,36 +301,62 @@ struct ModernAddressInputField: View {
             
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
-                    TextField(placeholder, text: $address)
-                        .font(.system(size: 16, weight: .medium))
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .onChange(of: address) { newValue in
-                            updateSuggestions(for: newValue)
-                        }
-                        .onSubmit {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isFocused = false
-                                showSuggestions = false
+                    // 支持多行，完整显示地址
+                    if #available(iOS 16.0, *) {
+                        TextField(placeholder, text: $address, axis: .vertical)
+                            .font(.system(size: 16, weight: .medium))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .lineLimit(1...8)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .onSubmit {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isFocused = false
+                                }
                             }
-                        }
-                    
-                    // 地图确认按钮
+                    } else {
+                        // iOS 15 及以下回退为单行 TextField，但允许复制查看
+                        TextField(placeholder, text: $address)
+                            .font(.system(size: 16, weight: .medium))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .onSubmit {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isFocused = false
+                                }
+                            }
+                    }
+
+                    // 清空按钮
                     if !address.isEmpty {
                         Button(action: {
-                            showMapConfirm = true
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                address = ""
+                            }
                         }) {
-                            Image(systemName: "map.fill")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.blue)
-                                .padding(8)
-                                .background(
-                                    Circle()
-                                        .fill(Color.blue.opacity(0.1))
-                                )
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(Color(UIColor.tertiaryLabel))
+                                .padding(6)
                         }
-                        .transition(.scale.combined(with: .opacity))
+                        .accessibilityLabel("Clear address")
+                        .transition(.opacity.combined(with: .scale))
                     }
+
+                    // 地图确认按钮（始终显示，便于直接从地图选择）
+                    Button(action: {
+                        showMapConfirm = true
+                    }) {
+                        Image(systemName: "map.fill")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.blue)
+                            .padding(8)
+                            .background(
+                                Circle()
+                                    .fill(Color.blue.opacity(0.1))
+                            )
+                    }
+                    .transition(.scale.combined(with: .opacity))
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 16)
@@ -345,9 +366,9 @@ struct ModernAddressInputField: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: 14)
                                 .stroke(
-                                    isFocused 
-                                    ? iconColor 
-                                    : (addressManager.isJapaneseAddress(address) ? Color.green : Color.clear), 
+                                    isFocused
+                                    ? iconColor
+                                    : (!address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.green : Color.clear),
                                     lineWidth: 2
                                 )
                         )
@@ -360,84 +381,24 @@ struct ModernAddressInputField: View {
                 .scaleEffect(isFocused ? 1.02 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: isFocused)
                 
-                // 地址格式提示
-                if !address.isEmpty {
+                // 地址状态提示（全球）：非空即认为有效
+                if !address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     HStack(spacing: 6) {
-                        Image(systemName: addressManager.isJapaneseAddress(address) ? "checkmark.circle.fill" : "info.circle.fill")
+                        Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 12))
-                            .foregroundColor(addressManager.isJapaneseAddress(address) ? .green : .orange)
-                        
-                        Text(addressManager.isJapaneseAddress(address) ? "日本地址格式正确" : "建议使用完整的日本地址格式")
+                            .foregroundColor(.green)
+
+                        Text(localized: .addressFormatValid)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
-                        
+
                         Spacer()
                     }
                     .padding(.horizontal, 4)
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 
-                // 智能地址建议
-                if showSuggestions && !suggestions.isEmpty {
-                    VStack(spacing: 8) {
-                        HStack {
-                            Image(systemName: "lightbulb.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.orange)
-                            Text("地址建议")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Button("隐藏") {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showSuggestions = false
-                                }
-                            }
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.blue)
-                        }
-                        
-                        LazyVStack(spacing: 6) {
-                            ForEach(suggestions.prefix(3), id: \.self) { suggestion in
-                                Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        address = suggestion
-                                        showSuggestions = false
-                                    }
-                                }) {
-                                    HStack {
-                                        Image(systemName: "mappin")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.blue)
-                                        Text(suggestion)
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(.primary)
-                                            .multilineTextAlignment(.leading)
-                                        Spacer()
-                                        Image(systemName: "arrow.up.left")
-                                            .font(.system(size: 10))
-                                            .foregroundColor(.blue)
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color(.systemGray6))
-                                    )
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                    )
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+                
             }
         }
         .padding(20)
@@ -458,39 +419,6 @@ struct ModernAddressInputField: View {
                     address = confirmedAddress
                 }
             }
-        }
-    }
-    
-    private func updateSuggestions(for input: String) {
-        guard !input.isEmpty else {
-            showSuggestions = false
-            suggestions = []
-            return
-        }
-        
-        suggestions = addressManager.getAddressSuggestions(for: input)
-        
-        withAnimation(.easeInOut(duration: 0.3)) {
-            showSuggestions = !suggestions.isEmpty
-        }
-    }
-}
-
-// 保留旧版本以防兼容性问题
-struct AddressInputField: View {
-    let label: String
-    @Binding var address: String
-    let placeholder: String
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label)
-                .font(.headline)
-                .fontWeight(.medium)
-            
-            TextField(placeholder, text: $address)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .font(.body)
         }
     }
 }

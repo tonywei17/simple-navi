@@ -20,6 +20,8 @@
 		1A1A1A341A1A1A34 /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A331A1A1A35 /* LocalizationManager.swift */; };
 		1A1A1A361A1A1A36 /* LanguageSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A351A1A1A37 /* LanguageSelectionView.swift */; };
 		1A1A1A381A1A1A38 /* DonationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A371A1A1A39 /* DonationView.swift */; };
+		1A1A1A3A1A1A1A3A /* Coordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3B1A1A1A3B /* Coordinates.swift */; };
+		1A1A1A3C1A1A1A3C /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +40,8 @@
 		1A1A1A331A1A1A35 /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationManager.swift; sourceTree = "<group>"; };
 		1A1A1A351A1A1A37 /* LanguageSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageSelectionView.swift; sourceTree = "<group>"; };
 		1A1A1A371A1A1A39 /* DonationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DonationView.swift; sourceTree = "<group>"; };
+		1A1A1A3B1A1A1A3B /* Coordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinates.swift; sourceTree = "<group>"; };
+		1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsKeys.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +86,8 @@
 				1A1A1A331A1A1A35 /* LocalizationManager.swift */,
 				1A1A1A351A1A1A37 /* LanguageSelectionView.swift */,
 				1A1A1A371A1A1A39 /* DonationView.swift */,
+				1A1A1A3B1A1A1A3B /* Coordinates.swift */,
+				1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */,
 				1A1A1A1D1A1A1A1D /* Assets.xcassets */,
 				1A1A1A1F1A1A1A1F /* Preview Content */,
 			);
@@ -167,6 +173,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A1A1A1C1A1A1A1C /* ContentView.swift in Sources */,
+				1A1A1A281A1A1A28 /* SetupView.swift in Sources */,
+				1A1A1A3A1A1A1A3A /* Coordinates.swift in Sources */,
+				1A1A1A3C1A1A1A3C /* UserDefaultsKeys.swift in Sources */,
 				1A1A1A2A1A1A1A2A /* CompassView.swift in Sources */,
 				1A1A1A2C1A1A1A2C /* GeocodingService.swift in Sources */,
 				1A1A1A2E1A1A1A2E /* JapaneseAddressManager.swift in Sources */,
@@ -307,24 +316,27 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"SimpleNavi/Preview Content\"";
 				DEVELOPMENT_TEAM = K2ZG73WM9X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SimpleNavi/Info.plist;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "这个应用需要位置信息来显示到家的方向和距离";
+				INFOPLIST_KEY_CFBundleDisplayName = "简单导航";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.app;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenavi;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -344,18 +356,21 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SimpleNavi/Info.plist;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "这个应用需要位置信息来显示到家的方向和距离";
+				INFOPLIST_KEY_CFBundleDisplayName = "简单导航";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.app;
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenavi;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

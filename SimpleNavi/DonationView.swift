@@ -1,118 +1,101 @@
 import SwiftUI
 import StoreKit
 
-// 打赏选项数据结构
-struct DonationOption {
-    let id: String
-    let titleKey: LocalizedStringKey
-    let descriptionKey: LocalizedStringKey
-    let price: String
-    let localizedPrice: String
-    let icon: String
-    let gradient: LinearGradient
+// MARK: - StoreKit 2 管理器（加载商品、处理购买、监听交易）
+final class IAPManager: ObservableObject {
+    @Published var products: [Product] = []
+    @Published var isLoading = false
+    @Published var errorMessage: String? = nil
+    private var updatesTask: Task<Void, Never>? = nil
+
+    // 统一的打赏商品 ID（请在 App Store Connect 中使用这些 ID 创建 IAP）
+    static let productIDs: [String] = [
+        "com.simplenavi.simplenavi.tip.small",
+        "com.simplenavi.simplenavi.tip.medium",
+        "com.simplenavi.simplenavi.tip.large"
+    ]
+
+    @MainActor
+    func loadProducts() async {
+        guard !isLoading else { return }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let fetched = try await Product.products(for: Self.productIDs)
+            // 按照预设顺序排序 small, medium, large
+            let order: [String: Int] = [
+                "com.simplenavi.simplenavi.tip.small": 0,
+                "com.simplenavi.simplenavi.tip.medium": 1,
+                "com.simplenavi.simplenavi.tip.large": 2,
+            ]
+            self.products = fetched.sorted { (lhs, rhs) in
+                (order[lhs.id] ?? 99) < (order[rhs.id] ?? 99)
+            }
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+
+    func startTransactionListener() {
+        updatesTask?.cancel()
+        updatesTask = Task.detached { [weak self] in
+            for await result in StoreKit.Transaction.updates {
+                guard let self else { continue }
+                do {
+                    let transaction: StoreKit.Transaction = try self.checkVerified(result)
+                    await transaction.finish()
+                } catch {
+                    // 忽略单次交易验证错误，集中在 UI 层提示
+                }
+            }
+        }
+    }
+
+    @discardableResult
+    func purchase(product: Product) async throws -> StoreKit.Transaction? {
+        let result = try await product.purchase()
+        switch result {
+        case .success(let verification):
+            let transaction: StoreKit.Transaction = try checkVerified(verification)
+            await transaction.finish()
+            return transaction
+        case .userCancelled:
+            return nil
+        case .pending:
+            return nil
+        @unknown default:
+            return nil
+        }
+    }
+
+    private func checkVerified<T>(_ result: StoreKit.VerificationResult<T>) throws -> T {
+        switch result {
+        case .unverified:
+            throw NSError(domain: "IAP", code: -1, userInfo: [NSLocalizedDescriptionKey: "Transaction unverified"])
+        case .verified(let safe):
+            return safe
+        }
+    }
 }
 
 struct DonationView: View {
     @Binding var isPresented: Bool
     @ObservedObject private var localizationManager = LocalizationManager.shared
+    @StateObject private var iap = IAPManager()
     @State private var isProcessingPurchase = false
     @State private var showThankYou = false
     @State private var showError = false
     @State private var errorMessage = ""
     
-    // 根据当前语言设置货币和价格
-    private var donationOptions: [DonationOption] {
-        switch localizationManager.currentLanguage {
-        case .chinese:
-            return [
-                DonationOption(
-                    id: "coffee_regular_cn",
-                    titleKey: .coffeeRegular,
-                    descriptionKey: .coffeeRegularDesc,
-                    price: "¥15",
-                    localizedPrice: "¥15",
-                    icon: "cup.and.saucer",
-                    gradient: LinearGradient(colors: [.brown, .orange], startPoint: .topLeading, endPoint: .bottomTrailing)
-                ),
-                DonationOption(
-                    id: "coffee_latte_cn", 
-                    titleKey: .coffeeLatte,
-                    descriptionKey: .coffeeLatteDesc,
-                    price: "¥35",
-                    localizedPrice: "¥35",
-                    icon: "cup.and.saucer.fill",
-                    gradient: LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing)
-                ),
-                DonationOption(
-                    id: "afternoon_tea_cn",
-                    titleKey: .afternoonTea,
-                    descriptionKey: .afternoonTeaDesc,
-                    price: "¥68",
-                    localizedPrice: "¥68",
-                    icon: "leaf.fill",
-                    gradient: LinearGradient(colors: [.green, .blue], startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-            ]
-        case .japanese:
-            return [
-                DonationOption(
-                    id: "coffee_regular_jp",
-                    titleKey: .coffeeRegular,
-                    descriptionKey: .coffeeRegularDesc,
-                    price: "¥300",
-                    localizedPrice: "¥300",
-                    icon: "cup.and.saucer",
-                    gradient: LinearGradient(colors: [.brown, .orange], startPoint: .topLeading, endPoint: .bottomTrailing)
-                ),
-                DonationOption(
-                    id: "coffee_latte_jp",
-                    titleKey: .coffeeLatte,
-                    descriptionKey: .coffeeLatteDesc,
-                    price: "¥750",
-                    localizedPrice: "¥750",
-                    icon: "cup.and.saucer.fill",
-                    gradient: LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing)
-                ),
-                DonationOption(
-                    id: "afternoon_tea_jp",
-                    titleKey: .afternoonTea,
-                    descriptionKey: .afternoonTeaDesc,
-                    price: "¥1500",
-                    localizedPrice: "¥1500",
-                    icon: "leaf.fill",
-                    gradient: LinearGradient(colors: [.green, .blue], startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-            ]
-        case .english:
-            return [
-                DonationOption(
-                    id: "coffee_regular_us",
-                    titleKey: .coffeeRegular,
-                    descriptionKey: .coffeeRegularDesc,
-                    price: "$1.99",
-                    localizedPrice: "$1.99",
-                    icon: "cup.and.saucer",
-                    gradient: LinearGradient(colors: [.brown, .orange], startPoint: .topLeading, endPoint: .bottomTrailing)
-                ),
-                DonationOption(
-                    id: "coffee_latte_us",
-                    titleKey: .coffeeLatte,
-                    descriptionKey: .coffeeLatteDesc,
-                    price: "$4.99",
-                    localizedPrice: "$4.99", 
-                    icon: "cup.and.saucer.fill",
-                    gradient: LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing)
-                ),
-                DonationOption(
-                    id: "afternoon_tea_us",
-                    titleKey: .afternoonTea,
-                    descriptionKey: .afternoonTeaDesc,
-                    price: "$9.99",
-                    localizedPrice: "$9.99",
-                    icon: "leaf.fill",
-                    gradient: LinearGradient(colors: [.green, .blue], startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-            ]
+    // 商品 ID → UI 展示的映射（使用已存在的本地化文案与配色）
+    private func uiForProduct(_ id: String) -> (title: LocalizedStringKey, desc: LocalizedStringKey, icon: String, gradient: LinearGradient) {
+        switch id {
+        case "com.simplenavi.simplenavi.tip.small":
+            return (.coffeeRegular, .coffeeRegularDesc, "cup.and.saucer", LinearGradient(colors: [.brown, .orange], startPoint: .topLeading, endPoint: .bottomTrailing))
+        case "com.simplenavi.simplenavi.tip.medium":
+            return (.coffeeLatte, .coffeeLatteDesc, "cup.and.saucer.fill", LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing))
+        default:
+            return (.afternoonTea, .afternoonTeaDesc, "leaf.fill", LinearGradient(colors: [.green, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
         }
     }
     
@@ -120,6 +103,14 @@ struct DonationView: View {
         NavigationView {
             mainContent
                 .navigationBarHidden(true)
+        }
+        .task {
+            await iap.loadProducts()
+            iap.startTransactionListener()
+            if let err = iap.errorMessage, !err.isEmpty {
+                errorMessage = err
+                showError = true
+            }
         }
         .alert(String(localized: .thankYou), isPresented: $showThankYou) {
             Button(String(localized: .done)) {
@@ -207,11 +198,12 @@ struct DonationView: View {
     
     private var donationOptionsSection: some View {
         VStack(spacing: 16) {
-            ForEach(donationOptions, id: \.id) { option in
-                donationOptionCard(option: option)
+            if iap.isLoading {
+                ProgressView().padding(.vertical, 12)
             }
-            
-            customAmountCard()
+            ForEach(iap.products, id: \.id) { product in
+                donationOptionCard(product: product)
+            }
         }
         .padding(.horizontal, 20)
     }
@@ -257,38 +249,40 @@ struct DonationView: View {
     
     // 打赏选项卡片
     @ViewBuilder
-    private func donationOptionCard(option: DonationOption) -> some View {
+    private func donationOptionCard(product: Product) -> some View {
         Button(action: {
-            processDonation(option: option)
+            processDonation(product: product)
         }) {
             HStack(spacing: 16) {
                 // 图标
                 ZStack {
+                    let ui = uiForProduct(product.id)
                     Circle()
-                        .fill(option.gradient)
+                        .fill(ui.gradient)
                         .frame(width: 60, height: 60)
                         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                     
-                    Image(systemName: option.icon)
+                    Image(systemName: ui.icon)
                         .font(.system(size: 24, weight: .medium))
                         .foregroundColor(.white)
                 }
                 
                 // 文本信息
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(String(localized: option.titleKey))
+                    let ui = uiForProduct(product.id)
+                    Text(String(localized: ui.title))
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    Text(String(localized: option.descriptionKey))
+                    Text(String(localized: ui.desc))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 
                 // 价格
-                Text(option.localizedPrice)
+                Text(product.displayPrice)
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.primary)
             }
@@ -304,76 +298,23 @@ struct DonationView: View {
         .disabled(isProcessingPurchase)
     }
     
-    // 自定义金额卡片
-    @ViewBuilder
-    private func customAmountCard() -> some View {
-        Button(action: {
-            // TODO: 实现自定义金额功能
-        }) {
-            HStack(spacing: 16) {
-                // 图标
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.purple, .blue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 60, height: 60)
-                        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                    
-                    Image(systemName: "dollarsign.circle.fill")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundColor(.white)
-                }
-                
-                // 文本信息
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(String(localized: .customAmount))
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    Text("Choose your own amount")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                
-                // 箭头
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.gray)
-            }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 12, x: 0, y: 6)
-            )
-        }
-        .disabled(isProcessingPurchase)
-    }
+    
     
     // 处理打赏
-    private func processDonation(option: DonationOption) {
+    private func processDonation(product: Product) {
         isProcessingPurchase = true
-        
-        // 模拟购买处理 (在实际应用中会调用StoreKit)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            isProcessingPurchase = false
-            
-            // 模拟随机成功/失败 (实际应用中根据StoreKit结果)
-            let success = Bool.random()
-            
-            if success {
-                showThankYou = true
-            } else {
-                errorMessage = String(localized: .purchaseFailed)
+        Task {
+            do {
+                let tx = try await iap.purchase(product: product)
+                // 仅在交易成功验证通过时展示感谢
+                if tx != nil {
+                    showThankYou = true
+                }
+            } catch {
+                errorMessage = error.localizedDescription.isEmpty ? String(localized: .purchaseFailed) : error.localizedDescription
                 showError = true
             }
+            isProcessingPurchase = false
         }
     }
 }
