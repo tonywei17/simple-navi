@@ -366,9 +366,9 @@ struct ModernAddressInputField: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: 14)
                                 .stroke(
-                                    isFocused 
-                                    ? iconColor 
-                                    : (addressManager.isJapaneseAddress(address) ? Color.green : Color.clear), 
+                                    isFocused
+                                    ? iconColor
+                                    : (!address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.green : Color.clear),
                                     lineWidth: 2
                                 )
                         )
@@ -381,17 +381,17 @@ struct ModernAddressInputField: View {
                 .scaleEffect(isFocused ? 1.02 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: isFocused)
                 
-                // 地址格式提示
-                if !address.isEmpty {
+                // 地址状态提示（全球）：非空即认为有效
+                if !address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     HStack(spacing: 6) {
-                        Image(systemName: addressManager.isJapaneseAddress(address) ? "checkmark.circle.fill" : "info.circle.fill")
+                        Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 12))
-                            .foregroundColor(addressManager.isJapaneseAddress(address) ? .green : .orange)
-                        
-                        Text(localized: addressManager.isJapaneseAddress(address) ? .addressFormatValid : .addressFormatSuggestion)
+                            .foregroundColor(.green)
+
+                        Text(localized: .addressFormatValid)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
-                        
+
                         Spacer()
                     }
                     .padding(.horizontal, 4)

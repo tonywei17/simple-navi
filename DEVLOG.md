@@ -96,3 +96,39 @@ Date: 2025-09-14 (JST)
 ## Next Steps
 - Optional: localize the coordinate fallback format (e.g., labels for latitude/longitude in ja/zh/en) and/or switch to DMS format.
 - Optional: apply the same auto-save approach to `SetupView.swift` if desired.
+
+---
+
+Date: 2025-09-14 (JST) — Update 2
+
+## Summary
+- Globalize address handling and fix build issues. AddressMapConfirmView now resolves addresses worldwide and falls back to POI names (e.g., airports) when postal addresses are unavailable. Removed JP-only validation from setup inputs. Fixed several geocoder API overload and MapKit initializer issues.
+
+## Details
+
+### Worldwide reverse geocoding
+- File: `SimpleNavi/JapaneseAddressManager.swift`
+  - Use `CNPostalAddressFormatter` first for any country; render as single line.
+  - If missing, assemble non-JP addresses from components, including `subAdministrativeArea` and `subLocality` (important for CN where `locality` can be empty). For JP keep native concatenation.
+  - If still empty, fall back to `placemark.name` / `areasOfInterest`.
+  - Final fallback: nearby POI search (8km) prioritizing `.airport` / `.publicTransport` via `MKLocalPointsOfInterestRequest`, then compose "POI, city, admin, country".
+  - If nothing suitable, return `.noResults` so UI shows lat/lon.
+  - API hygiene:
+    - Explicitly call `geocodeAddressString(..., completionHandler:)` and `reverseGeocodeLocation(..., completionHandler:)` to avoid trailing-closure ambiguity (which could be misread as `preferredLocale:`).
+    - Replace deprecated `MKLocalSearch(pointsOfInterestRequest:)` with `MKLocalSearch(request:)`.
+    - Removed non-existent `CLPlacemark.title` fallback.
+
+### Setup inputs validation (global)
+- File: `SimpleNavi/SetupView.swift`
+  - `ModernAddressInputField`: consider any non-empty value as valid (global UX). No more JP-only "格式不正确" warning.
+
+### Compass alignment refinements (recap)
+- File: `SimpleNavi/CompassView.swift`
+  - Dial rotates by `-currentHeading`; arrow uses `(bearing - heading)` and visual baseline corrected. Prefer `trueHeading`, fallback to `magneticHeading`, and start heading updates on appear. Orientation set to `.faceUp` when flat, `.portrait` otherwise.
+
+## Build fixes
+- Resolved: trailing-closure ambiguities with Dispatch/Operation and CLGeocoder overloads.
+- Resolved: extraneous brace and initializer rename for MapKit POI search.
+
+## Notes
+- PVG (Shanghai Pudong International Airport) and other large POIs should now resolve with meaningful names. If the network is unavailable, the UI falls back to coordinates.
