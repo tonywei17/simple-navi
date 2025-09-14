@@ -289,6 +289,8 @@ struct CompassView: View {
             loadAddresses()
             if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
                 startLocationUpdates()
+                // 确保无论授权是否在此前已授予，都立即开启方向更新
+                locationManager.startHeadingUpdates()
             }
         }
         .onChange(of: showSettings) { newValue in
@@ -415,7 +417,9 @@ struct CompassView: View {
     }
     
     private func updateArrowRotation() {
-        // 目标相对角 = 目标方位 - 设备朝向
+        // 刻度盘以 -heading 反向旋转，使 N 始终在顶部。
+        // 箭头应该显示为相对设备的方位：bearing - heading。
+        // 这样当 bearing == heading 时，箭头指向正上方，效果与系统指南针一致。
         let target = angle - locationManager.currentHeading
         // 与当前显示角度的最短差值
         let diff = wrapDelta(target - arrowRotation)
@@ -594,8 +598,8 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         // 启用磁力计方向检测
         if CLLocationManager.headingAvailable() {
-            locationManager.headingFilter = 1 // 降低过滤值以获得更精确的方向
-            locationManager.headingOrientation = .portrait
+            locationManager.headingFilter = kCLHeadingFilterNone // 不做角度滤波，让系统尽快提供真北
+            updateHeadingOrientation() // 根据设备方向设置合适的 headingOrientation
         }
         
         // 立即请求权限
@@ -603,6 +607,10 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         if authorizationStatus == .notDetermined {
             locationManager.requestWhenInUseAuthorization()
         }
+
+        // 监听设备方向变化，动态调整 headingOrientation（面朝上时使用 .faceUp 更接近系统指南针）
+        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+        NotificationCenter.default.addObserver(self, selector: #selector(handleOrientationChange), name: UIDevice.orientationDidChangeNotification, object: nil)
     }
     
     func startLocationUpdates(completion: @escaping (CLLocation) -> Void) {
@@ -626,6 +634,10 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func stopHeadingUpdates() {
         locationManager.stopUpdatingHeading()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -657,18 +669,39 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
             return 
         }
         
-        // 优先使用真北方向，如果不可用则使用磁北方向
+        // 优先使用真北；若不可用则回落到磁北（系统指南针在定位未就绪前也会短暂使用磁北）。
         let heading: CLLocationDirection
         if newHeading.trueHeading >= 0 {
             heading = newHeading.trueHeading
-            print("使用真北方向：\(heading)°")
+            print("使用真北方向：\(heading)°，accuracy=\(newHeading.headingAccuracy)")
         } else {
             heading = newHeading.magneticHeading
-            print("使用磁北方向：\(heading)°")
+            print("使用磁北方向：\(heading)°，accuracy=\(newHeading.headingAccuracy)")
         }
         
         DispatchQueue.main.async {
             self.currentHeading = heading
+        }
+    }
+
+    // 当系统认为需要时，显示校准界面（与系统指南针保持一致的流程）
+    func locationManagerShouldDisplayHeadingCalibration(_ manager: CLLocationManager) -> Bool {
+        return true
+    }
+
+    // MARK: - Heading orientation helpers
+    @objc private func handleOrientationChange() {
+        updateHeadingOrientation()
+    }
+
+    private func updateHeadingOrientation() {
+        // 与系统指南针接近的策略：
+        // - 平放时使用 .faceUp（系统指南针常用姿态）
+        // - 其他姿态使用 .portrait，避免横屏/倒置带来的象限偏移
+        let dev = UIDevice.current.orientation
+        let cl: CLDeviceOrientation = (dev == .faceUp || dev == .faceDown) ? .faceUp : .portrait
+        if CLLocationManager.headingAvailable() {
+            locationManager.headingOrientation = cl
         }
     }
 }
