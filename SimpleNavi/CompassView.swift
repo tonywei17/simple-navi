@@ -14,8 +14,9 @@ struct CompassView: View {
     @State private var angle: Double = 0
     @State private var distance: Double = 0
     @State private var showDonation = false
-    @State private var spinOffset: Double = 0 // 点击箭头时用于做一圈旋转的增量角度
     @State private var arrowRotation: Double = 0 // 基于最短角度差的累计显示角度（不整圈）
+    @State private var spinAngle: Double = 0 // 一次性旋转动画角度（0→360）
+    @State private var isSpinning: Bool = false // 防止叠加旋转
     @State private var showSetupPrompt: Bool = false // 未设置地址时的提示弹窗
     
     
@@ -138,18 +139,26 @@ struct CompassView: View {
                             
                             // 现代化箭头 - 优先使用自定义图片资源，其次回退到 SF Symbol
                             // 使用累计的最短角度差显示值，避免自然转动手机时出现整圈旋转
-                            CompassArrow(rotation: arrowRotation + spinOffset)
+                            CompassArrow(rotation: arrowRotation + spinAngle)
                                 .contentShape(Circle())
                                 .onTapGesture {
-                                    // 趣味动效：点击时顺时针旋转一圈，带一点弹性
-                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.55, blendDuration: 0.2)) {
-                                        spinOffset += 360
+                                    // 趣味动效：点击时顺时针旋转一圈（带轻微回弹），显式动画提高流畅度
+                                    guard !isSpinning else { return }
+                                    isSpinning = true
+                                    spinAngle = 0
+                                    withAnimation(.interpolatingSpring(stiffness: 120, damping: 10)) {
+                                        spinAngle = 360
+                                    }
+                                    // 动画结束后将角度复位，避免无限增大导致的数值累积
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                                        withAnimation(nil) {
+                                            spinAngle = 0
+                                            isSpinning = false
+                                        }
                                     }
                                 }
-                                // 位置/朝向变化的平滑动画（线性、短时长，连续平顺）
-                                .animation(.linear(duration: 0.12), value: arrowRotation)
-                                // 点击旋转动效的弹性动画
-                                .animation(.spring(response: 0.6, dampingFraction: 0.55, blendDuration: 0.2), value: spinOffset)
+                                // 预合成以减少图层混合的开销，提升旋转时的流畅度
+                                .compositingGroup()
                         }
                         .padding(.horizontal, 20)
                         
@@ -424,7 +433,15 @@ struct CompassView: View {
         // 与当前显示角度的最短差值
         let diff = wrapDelta(target - arrowRotation)
         // 采用最短路径更新显示角度（避免跨 0° 时出现整圈旋转）
-        arrowRotation += diff
+        if isSpinning {
+            // 旋转一圈动画进行中：为了避免动画冲突，立即更新，无额外动画
+            arrowRotation += diff
+        } else {
+            // 非点击旋转场景：线性短动画平滑过渡
+            withAnimation(.linear(duration: 0.12)) {
+                arrowRotation += diff
+            }
+        }
     }
 
     // MARK: - Slot helpers and UI
