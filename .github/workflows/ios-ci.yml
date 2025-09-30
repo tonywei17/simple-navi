@@ -1,0 +1,59 @@
+name: iOS CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-lint:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.4'
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: build-cli
+          key: deriveddata-${{ runner.os }}-${{ hashFiles('**/*.swift') }}
+
+      - name: Build
+        run: |
+          set -e
+          xcodebuild -project SimpleNavi.xcodeproj -scheme SimpleNavi -destination 'platform=iOS Simulator,name=iPhone 15' -configuration Debug build
+
+      - name: Test
+        run: |
+          set -e
+          xcodebuild -project SimpleNavi.xcodeproj -scheme SimpleNavi -destination 'platform=iOS Simulator,name=iPhone 15' -configuration Debug test
+
+      - name: Build Release (Simulator)
+        run: |
+          set -e
+          xcodebuild -project SimpleNavi.xcodeproj -scheme SimpleNavi -destination 'platform=iOS Simulator,name=iPhone 15' -configuration Release -derivedDataPath build-cli build
+
+      - name: Package App Artifact
+        run: |
+          set -e
+          cd build-cli/Build/Products/Release-iphonesimulator
+          zip -r SimpleNavi.app.zip SimpleNavi.app
+
+      - name: Upload App Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpleNavi-Release-iphonesimulator.app
+          path: build-cli/Build/Products/Release-iphonesimulator/SimpleNavi.app.zip
+          retention-days: 7
+
+      - name: SwiftLint
+        uses: realm/SwiftLint@3.2.1
+        with:
+          args: --strict

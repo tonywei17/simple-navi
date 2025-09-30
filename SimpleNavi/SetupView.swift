@@ -75,9 +75,10 @@ struct SetupView: View {
     @ObservedObject private var localizationManager = LocalizationManager.shared
     @State private var showLanguageSheet = false
     
-    @AppStorage(UDKeys.address1) private var address1 = ""
-    @AppStorage(UDKeys.address2) private var address2 = ""
-    @AppStorage(UDKeys.address3) private var address3 = ""
+    // 使用加密存储替代明文 @AppStorage
+    @State private var address1 = ""
+    @State private var address2 = ""
+    @State private var address3 = ""
     @State private var isLoading = false
 
     var body: some View {
@@ -243,17 +244,27 @@ struct SetupView: View {
                             .frame(height: 30)
                     }
                 }
-                .sheet(isPresented: $showLanguageSheet) {
+                .fullScreenCover(isPresented: $showLanguageSheet) {
                     LanguageSelectionView(isPresented: $showLanguageSheet)
+                        .onAppear { print("[LanguageFullScreen-SetupView] presented") }
                 }
             }
+        }
+        .onAppear {
+            // 加载加密存储中的已保存地址
+            address1 = SecureStorage.shared.getString(forKey: UDKeys.address1) ?? ""
+            address2 = SecureStorage.shared.getString(forKey: UDKeys.address2) ?? ""
+            address3 = SecureStorage.shared.getString(forKey: UDKeys.address3) ?? ""
         }
     }
     
     private func saveAddresses() {
         isLoading = true
-        
-        UserDefaults.standard.set(true, forKey: UDKeys.hasSetupAddresses)
+        // 持久化到加密存储
+        SecureStorage.shared.setString(address1.trimmingCharacters(in: .whitespacesAndNewlines), forKey: UDKeys.address1)
+        SecureStorage.shared.setString(address2.trimmingCharacters(in: .whitespacesAndNewlines), forKey: UDKeys.address2)
+        SecureStorage.shared.setString(address3.trimmingCharacters(in: .whitespacesAndNewlines), forKey: UDKeys.address3)
+        UserDefaults.standard.set(!address1.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, forKey: UDKeys.hasSetupAddresses)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             isLoading = false
@@ -417,6 +428,7 @@ struct ModernAddressInputField: View {
             .onDisappear {
                 if !confirmedAddress.isEmpty {
                     address = confirmedAddress
+                    // 保存到加密存储（父视图通过绑定会触发 onChange）
                 }
             }
         }

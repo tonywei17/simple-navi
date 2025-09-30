@@ -174,33 +174,58 @@ struct CompassView: View {
                                 Spacer()
                             }
                             
-                            ViewThatFits(in: .horizontal) {
-                                // 方案一：同一行显示（数字 + 单位）
-                                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Text("\(Int(distance))")
-                                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                                        .foregroundStyle(
-                                            LinearGradient(
-                                                colors: [.blue, .purple],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
+                            if #available(iOS 16.0, *) {
+                                ViewThatFits(in: .horizontal) {
+                                    // 方案一：同一行显示（数字 + 单位）
+                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                        Text("\(Int(distance))")
+                                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                                            .foregroundStyle(
+                                                LinearGradient(
+                                                    colors: [.blue, .purple],
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                )
                                             )
-                                        )
-                                        .lineLimit(1)
-                                        .fixedSize(horizontal: true, vertical: false)
-                                        .layoutPriority(2)
-                                        .animation(.easeInOut(duration: 0.3), value: distance)
+                                            .lineLimit(1)
+                                            .fixedSize(horizontal: true, vertical: false)
+                                            .layoutPriority(2)
+                                            .animation(.easeInOut(duration: 0.3), value: distance)
 
-                                    Text(localized: .meters)
-                                        .font(.system(size: 24, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(1) // 保证单位整体，不出现局部换行
-                                        .fixedSize(horizontal: true, vertical: false)
+                                        Text(localized: .meters)
+                                            .font(.system(size: 24, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1) // 保证单位整体，不出现局部换行
+                                            .fixedSize(horizontal: true, vertical: false)
 
-                                    Spacer(minLength: 0)
+                                        Spacer(minLength: 0)
+                                    }
+
+                                    // 方案二：不够放时，整个单位换到下一行
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("\(Int(distance))")
+                                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                                            .foregroundStyle(
+                                                LinearGradient(
+                                                    colors: [.blue, .purple],
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                )
+                                            )
+                                            .lineLimit(1)
+                                            .fixedSize(horizontal: true, vertical: false)
+                                            .layoutPriority(2)
+                                            .animation(.easeInOut(duration: 0.3), value: distance)
+
+                                        Text(localized: .meters)
+                                            .font(.system(size: 24, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                            .fixedSize(horizontal: true, vertical: false)
+                                    }
                                 }
-
-                                // 方案二：不够放时，整个单位换到下一行
+                            } else {
+                                // iOS 15 回退：使用垂直布局
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("\(Int(distance))")
                                         .font(.system(size: 48, weight: .bold, design: .rounded))
@@ -313,10 +338,10 @@ struct CompassView: View {
         .onReceive(locationManager.$currentLocation) { _ in
             updateDirection()
         }
-        .onChange(of: selectedDestination) {
+        .onChange(of: selectedDestination) { _ in
             updateDirection()
         }
-        .onChange(of: locationManager.currentHeading) {
+        .onChange(of: locationManager.currentHeading) { _ in
             // 设备朝向变化时，更新箭头显示角度（按最短角度差累积）
             updateArrowRotation()
         }
@@ -338,17 +363,17 @@ struct CompassView: View {
         var loadedAddresses: [String] = []
         var loadedCoordinates: [CLLocationCoordinate2D] = []
         
-        if let addr1 = UserDefaults.standard.string(forKey: UDKeys.address1), !addr1.isEmpty {
+        if let addr1 = getAddress(forKey: UDKeys.address1), !addr1.isEmpty {
             loadedAddresses.append(addr1)
             geocodeAndStoreAddress(addr1, index: loadedCoordinates.count)
             loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
         }
-        if let addr2 = UserDefaults.standard.string(forKey: UDKeys.address2), !addr2.isEmpty {
+        if let addr2 = getAddress(forKey: UDKeys.address2), !addr2.isEmpty {
             loadedAddresses.append(addr2)
             geocodeAndStoreAddress(addr2, index: loadedCoordinates.count)
             loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
         }
-        if let addr3 = UserDefaults.standard.string(forKey: UDKeys.address3), !addr3.isEmpty {
+        if let addr3 = getAddress(forKey: UDKeys.address3), !addr3.isEmpty {
             loadedAddresses.append(addr3)
             geocodeAndStoreAddress(addr3, index: loadedCoordinates.count)
             loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
@@ -448,12 +473,23 @@ struct CompassView: View {
     private func slotAddress(_ slot: Int) -> String {
         switch slot {
         case 0:
-            return UserDefaults.standard.string(forKey: UDKeys.address1) ?? ""
+            return getAddress(forKey: UDKeys.address1) ?? ""
         case 1:
-            return UserDefaults.standard.string(forKey: UDKeys.address2) ?? ""
+            return getAddress(forKey: UDKeys.address2) ?? ""
         default:
-            return UserDefaults.standard.string(forKey: UDKeys.address3) ?? ""
+            return getAddress(forKey: UDKeys.address3) ?? ""
         }
+    }
+
+    private func getAddress(forKey key: String) -> String? {
+        if let secured = SecureStorage.shared.getString(forKey: key), !secured.isEmpty {
+            return secured
+        }
+        // 兼容旧版本：回退读取 UserDefaults 明文
+        if let old = UserDefaults.standard.string(forKey: key), !old.isEmpty {
+            return old
+        }
+        return nil
     }
 
     private func slotIconName(_ slot: Int) -> String {

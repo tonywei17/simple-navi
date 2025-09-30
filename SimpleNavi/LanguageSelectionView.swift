@@ -4,69 +4,66 @@ import UIKit
 struct LanguageSelectionView: View {
     @ObservedObject private var localizationManager = LocalizationManager.shared
     @Binding var isPresented: Bool
-    
+
     var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                // 标题
-                VStack(spacing: 8) {
-                    Text(localized: .language)
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.primary)
-                    
-                    Text(localized: .selectLanguage)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, 20)
-                
-                // 语言选项
-                VStack(spacing: 16) {
-                    ForEach(SupportedLanguage.allCases, id: \.self) { language in
-                        languageOption(language)
-                    }
-                }
-                .padding(.horizontal, 20)
-                
-                Spacer()
-                
-                // 完成按钮
-                Button(action: {
-                    isPresented = false
-                }) {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 20))
-                        Text(localized: .done)
-                            .font(.system(size: 18, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(
-                        LinearGradient(
-                            colors: [.blue, .green],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-            }
-            .background(
-                LinearGradient(
-                    colors: [Color.blue.opacity(0.1), Color.green.opacity(0.05)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+        // 顶层使用 ZStack 铺满渐变，确保标题 inset 区域下也有同样的背景
+        ZStack {
+            LinearGradient(
+                colors: [Color.blue.opacity(0.1), Color.green.opacity(0.05)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
-            .toolbar(.hidden)
+            .ignoresSafeArea()
+
+            content
+                .safeAreaInset(edge: .top) {
+                    headerView
+                        .padding(.top, 12)
+                }
         }
     }
     
+    // MARK: - Content
+    @ViewBuilder
+    private var content: some View {
+        VStack(spacing: 20) {
+            // 语言选项
+            VStack(spacing: 16) {
+                ForEach(SupportedLanguage.allCases, id: \.self) { language in
+                    languageOption(language)
+                }
+            }
+            .padding(.horizontal, 20)
+
+            Spacer()
+
+            // 完成按钮
+            Button(action: {
+                isPresented = false
+            }) {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                    Text(localized: .done)
+                        .font(.system(size: 18, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(
+                    LinearGradient(
+                        colors: [.blue, .green],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+        }
+        // 背景已移至顶层 ZStack，避免在不同容器层产生叠加灰阶
+    }
     private func languageOption(_ language: SupportedLanguage) -> some View {
         Button(action: {
             localizationManager.currentLanguage = language
@@ -123,6 +120,25 @@ struct LanguageSelectionView: View {
         case .japanese:
             return "日本語"
         }
+    }
+
+    private var headerView: some View {
+        VStack(spacing: 2) {
+            Text(localized: .language)
+                .font(.system(size: 20, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.9)
+                .foregroundColor(.primary)
+            Text(localized: .selectLanguage)
+                .font(.system(size: 13, weight: .regular))
+                .lineLimit(1)
+                .minimumScaleFactor(0.9)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+        // 去除毛玻璃背景，避免在全屏弹窗中出现灰色蒙层感
+        .background(Color.clear)
     }
 }
 

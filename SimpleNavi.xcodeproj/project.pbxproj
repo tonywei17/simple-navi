@@ -22,6 +22,8 @@
 		1A1A1A381A1A1A38 /* DonationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A371A1A1A39 /* DonationView.swift */; };
 		1A1A1A3A1A1A1A3A /* Coordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3B1A1A1A3B /* Coordinates.swift */; };
 		1A1A1A3C1A1A1A3C /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */; };
+		1A1A1A401A1A1A40 /* SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3E1A1A1A3E /* SecureStorage.swift */; };
+		1A1A1A641A1A1A64 /* SimpleNaviTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A631A1A1A63 /* SimpleNaviTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +44,9 @@
 		1A1A1A371A1A1A39 /* DonationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DonationView.swift; sourceTree = "<group>"; };
 		1A1A1A3B1A1A1A3B /* Coordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinates.swift; sourceTree = "<group>"; };
 		1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsKeys.swift; sourceTree = "<group>"; };
+		1A1A1A3E1A1A1A3E /* SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStorage.swift; sourceTree = "<group>"; };
+		1A1A1A631A1A1A63 /* SimpleNaviTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleNaviTests.swift; sourceTree = "<group>"; };
+		1A1A1A611A1A1A61 /* SimpleNaviTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimpleNaviTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +57,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+        1A1A1A661A1A1A66 /* Frameworks */ = {
+            isa = PBXFrameworksBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -67,6 +79,7 @@
 			isa = PBXGroup;
 			children = (
 				1A1A1A161A1A1A16 /* SimpleNavi.app */,
+				1A1A1A611A1A1A61 /* SimpleNaviTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -88,10 +101,19 @@
 				1A1A1A371A1A1A39 /* DonationView.swift */,
 				1A1A1A3B1A1A1A3B /* Coordinates.swift */,
 				1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */,
+				1A1A1A3E1A1A1A3E /* SecureStorage.swift */,
 				1A1A1A1D1A1A1A1D /* Assets.xcassets */,
 				1A1A1A1F1A1A1A1F /* Preview Content */,
 			);
 			path = SimpleNavi;
+			sourceTree = "<group>";
+		};
+		1A1A1A621A1A1A62 /* SimpleNaviTests */ = {
+			isa = PBXGroup;
+			children = (
+				1A1A1A631A1A1A63 /* SimpleNaviTests.swift */,
+			);
+			path = SimpleNaviTests;
 			sourceTree = "<group>";
 		};
 		1A1A1A1F1A1A1A1F /* Preview Content */ = {
@@ -122,6 +144,24 @@
 			productReference = 1A1A1A161A1A1A16 /* SimpleNavi.app */;
 			productType = "com.apple.product-type.application";
 		};
+        1A1A1A601A1A1A60 /* SimpleNaviTests */ = {
+            isa = PBXNativeTarget;
+            buildConfigurationList = 1A1A1A6F1A1A1A6F /* Build configuration list for PBXNativeTarget "SimpleNaviTests" */;
+            buildPhases = (
+                1A1A1A651A1A1A65 /* Sources */,
+                1A1A1A661A1A1A66 /* Frameworks */,
+                1A1A1A6C1A1A1A6C /* Resources */,
+            );
+            buildRules = (
+            );
+            dependencies = (
+                1A1A1A681A1A1A68 /* PBXTargetDependency */,
+            );
+            name = SimpleNaviTests;
+            productName = SimpleNaviTests;
+            productReference = 1A1A1A611A1A1A61 /* SimpleNaviTests.xctest */;
+            productType = "com.apple.product-type.bundle.unit-test";
+        };
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -151,9 +191,29 @@
 			projectRoot = "";
 			targets = (
 				1A1A1A151A1A1A15 /* SimpleNavi */,
+				1A1A1A601A1A1A60 /* SimpleNaviTests */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXContainerItemProxy section */
+        1A1A1A691A1A1A69 /* PBXContainerItemProxy */ = {
+            isa = PBXContainerItemProxy;
+            containerPortal = 1A1A1A0E1A1A1A0E /* Project object */;
+            proxyType = 1;
+            remoteGlobalIDString = 1A1A1A151A1A1A15;
+            remoteInfo = SimpleNavi;
+        };
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+        1A1A1A681A1A1A68 /* PBXTargetDependency */ = {
+            isa = PBXTargetDependency;
+            name = SimpleNavi;
+            target = 1A1A1A151A1A1A15 /* SimpleNavi */;
+            targetProxy = 1A1A1A691A1A1A69 /* PBXContainerItemProxy */;
+        };
+/* End PBXTargetDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		1A1A1A141A1A1A14 /* Resources */ = {
@@ -165,6 +225,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+        1A1A1A6C1A1A1A6C /* Resources */ = {
+            isa = PBXResourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -185,9 +252,18 @@
 				1A1A1A361A1A1A36 /* LanguageSelectionView.swift in Sources */,
 				1A1A1A381A1A1A38 /* DonationView.swift in Sources */,
 				1A1A1A1A1A1A1A1A /* SimpleNaviApp.swift in Sources */,
+				1A1A1A401A1A1A40 /* SecureStorage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+        1A1A1A651A1A1A65 /* Sources */ = {
+            isa = PBXSourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+                1A1A1A641A1A1A64 /* SimpleNaviTests.swift in Sources */,
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -243,7 +319,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -300,7 +376,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -378,6 +454,46 @@
 			};
 			name = Release;
 		};
+        1A1A1A6D1A1A1A6D /* Debug */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+                CODE_SIGN_STYLE = Automatic;
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_KEY_CFBundleDisplayName = "SimpleNaviTests";
+                LD_RUNPATH_SEARCH_PATHS = (
+                    "$(inherited)",
+                    "@executable_path/Frameworks",
+                    "@loader_path/Frameworks",
+                );
+                IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+                PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenaviTests;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SWIFT_VERSION = 5.0;
+                TESTHost = "";
+            };
+            name = Debug;
+        };
+        1A1A1A6E1A1A1A6E /* Release */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+                CODE_SIGN_STYLE = Automatic;
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_KEY_CFBundleDisplayName = "SimpleNaviTests";
+                LD_RUNPATH_SEARCH_PATHS = (
+                    "$(inherited)",
+                    "@executable_path/Frameworks",
+                    "@loader_path/Frameworks",
+                );
+                IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+                PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenaviTests;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SWIFT_VERSION = 5.0;
+                TESTHost = "";
+            };
+            name = Release;
+        };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -399,6 +515,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+        1A1A1A6F1A1A1A6F /* Build configuration list for PBXNativeTarget "SimpleNaviTests" */ = {
+            isa = XCConfigurationList;
+            buildConfigurations = (
+                1A1A1A6D1A1A1A6D /* Debug */,
+                1A1A1A6E1A1A1A6E /* Release */,
+            );
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = Release;
+        };
 /* End XCConfigurationList section */
 	};
 	rootObject = 1A1A1A0E1A1A1A0E /* Project object */;

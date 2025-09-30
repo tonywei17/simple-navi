@@ -1,0 +1,44 @@
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - identifier_name
+
+opt_in_rules:
+  - empty_count
+  - force_unwrapping
+
+included:
+  - SimpleNavi
+
+analyzer_rules:
+  - unused_import
+
+whitelist_rules:
+  - anyobject_protocol
+  - array_init
+  - attributes
+  - closure_end_indentation
+  - closure_spacing
+  - colon
+  - comma
+  - empty_count
+  - empty_enum_arguments
+  - empty_parameters
+  - fallthrough
+  - fatal_error_message
+  - force_cast
+  - force_try
+  - force_unwrapping
+  - implicit_getter
+  - is_disjoint
+  - opening_brace
+  - operator_whitespace
+  - overridden_super_call
+  - private_over_fileprivate
+  - redundant_string_enum_value
+  - redundant_void_return
+  - return_arrow_whitespace
+  - redundant_type_annotation
+  - statement_position
+  - trailing_newline
+  - vertical_whitespace

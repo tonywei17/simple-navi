@@ -5,9 +5,10 @@ struct SetupViewSimple: View {
     @Binding var isFirstLaunch: Bool
     @Binding var showSettings: Bool
     
-    @AppStorage(UDKeys.address1) private var address1 = ""
-    @AppStorage(UDKeys.address2) private var address2 = ""
-    @AppStorage(UDKeys.address3) private var address3 = ""
+    // 使用加密存储替代明文 @AppStorage
+    @State private var address1 = ""
+    @State private var address2 = ""
+    @State private var address3 = ""
     @State private var showLanguageSelection = false
     
     @ObservedObject private var localizationManager = LocalizationManager.shared
@@ -21,13 +22,51 @@ struct SetupViewSimple: View {
                 content
             }
         }
-        .sheet(isPresented: $showLanguageSelection) {
+        .fullScreenCover(isPresented: $showLanguageSelection) {
             LanguageSelectionView(isPresented: $showLanguageSelection)
+                .onAppear { print("[LanguageFullScreen] presented") }
         }
         // 自动保存：当地址1有内容时，标记已完成设置
         .onChange(of: address1) { newValue in
-            let has = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            SecureStorage.shared.setString(trimmed, forKey: UDKeys.address1)
+            let has = !trimmed.isEmpty
             UserDefaults.standard.set(has, forKey: UDKeys.hasSetupAddresses)
+        }
+        .onChange(of: address2) { newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            SecureStorage.shared.setString(trimmed, forKey: UDKeys.address2)
+        }
+        .onChange(of: address3) { newValue in
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            SecureStorage.shared.setString(trimmed, forKey: UDKeys.address3)
+        }
+        .onAppear {
+            // 初始加载加密地址并执行一次性迁移（如存在旧的明文 UserDefaults）
+            let s1 = SecureStorage.shared.getString(forKey: UDKeys.address1)
+            let s2 = SecureStorage.shared.getString(forKey: UDKeys.address2)
+            let s3 = SecureStorage.shared.getString(forKey: UDKeys.address3)
+            var a1 = s1 ?? ""
+            var a2 = s2 ?? ""
+            var a3 = s3 ?? ""
+            if a1.isEmpty, let old = UserDefaults.standard.string(forKey: UDKeys.address1), !old.isEmpty {
+                SecureStorage.shared.setString(old, forKey: UDKeys.address1)
+                a1 = old
+                UserDefaults.standard.removeObject(forKey: UDKeys.address1)
+            }
+            if a2.isEmpty, let old = UserDefaults.standard.string(forKey: UDKeys.address2), !old.isEmpty {
+                SecureStorage.shared.setString(old, forKey: UDKeys.address2)
+                a2 = old
+                UserDefaults.standard.removeObject(forKey: UDKeys.address2)
+            }
+            if a3.isEmpty, let old = UserDefaults.standard.string(forKey: UDKeys.address3), !old.isEmpty {
+                SecureStorage.shared.setString(old, forKey: UDKeys.address3)
+                a3 = old
+                UserDefaults.standard.removeObject(forKey: UDKeys.address3)
+            }
+            address1 = a1
+            address2 = a2
+            address3 = a3
         }
     }
 
@@ -76,7 +115,10 @@ struct SetupViewSimple: View {
                     .foregroundColor(.blue)
                 }
                 Spacer()
-                LanguagePickerButton(action: { showLanguageSelection = true })
+                LanguagePickerButton(action: {
+                    print("[SetupViewSimple] LanguagePicker tapped")
+                    showLanguageSelection = true
+                })
             }
             
             Image(systemName: "house.circle.fill")

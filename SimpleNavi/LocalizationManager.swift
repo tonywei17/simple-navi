@@ -43,7 +43,15 @@ class LocalizationManager: ObservableObject {
             currentLanguage = language
         } else {
             // 根据系统语言自动选择
-            let systemLanguage = Locale.current.language.languageCode?.identifier ?? "en"
+            let systemLanguage: String
+            if #available(iOS 16.0, *) {
+                systemLanguage = Locale.current.language.languageCode?.identifier ?? "en"
+            } else {
+                // iOS 15 回退：从首选语言列表中取首项并解析语言码（如 "zh-Hans-CN" -> "zh"）
+                let preferred = Locale.preferredLanguages.first ?? "en"
+                let prefix = preferred.split(separator: "-").first.map(String.init) ?? "en"
+                systemLanguage = prefix
+            }
             switch systemLanguage {
             case "zh":
                 currentLanguage = .chinese
