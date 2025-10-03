@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -24,6 +24,14 @@
 		1A1A1A3C1A1A1A3C /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */; };
 		1A1A1A401A1A1A40 /* SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3E1A1A1A3E /* SecureStorage.swift */; };
 		1A1A1A641A1A1A64 /* SimpleNaviTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A631A1A1A63 /* SimpleNaviTests.swift */; };
+		1E30B2A300000000000000B1 /* SharedDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E30B2A000000000000000A1 /* SharedDataStore.swift */; };
+		1E30B2A32E8FE0BE00F0F209 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E30B2A22E8FE0BE00F0F209 /* WidgetKit.framework */; };
+		1E30B2A400000000000000B2 /* LiveActivityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E30B2A100000000000000A2 /* LiveActivityModels.swift */; };
+		1E30B2A500000000000000B3 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E30B2A200000000000000A3 /* LiveActivityManager.swift */; };
+		1E30B2A52E8FE0BE00F0F209 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E30B2A42E8FE0BE00F0F209 /* SwiftUI.framework */; };
+		1E30B2B62E8FE0BF00F0F209 /* SimpleNaviWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1E30B2A02E8FE0BE00F0F209 /* SimpleNaviWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1E30B2CB2E8FE28000F0F209 /* LiveActivityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E30B2A100000000000000A2 /* LiveActivityModels.swift */; };
+		1E30B2CC2E8FE29700F0F209 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E30B2A200000000000000A3 /* LiveActivityManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,7 +42,28 @@
 			remoteGlobalIDString = 1A1A1A151A1A1A15;
 			remoteInfo = SimpleNavi;
 		};
+		1E30B2B42E8FE0BF00F0F209 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A1A1A0E1A1A1A0E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1E30B29F2E8FE0BE00F0F209;
+			remoteInfo = SimpleNaviWidgetsExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1E30B2B72E8FE0BF00F0F209 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				1E30B2B62E8FE0BF00F0F209 /* SimpleNaviWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		1A1A1A161A1A1A16 /* SimpleNavi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimpleNavi.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -59,7 +88,28 @@
 		1A1A1A631A1A1A63 /* SimpleNaviTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleNaviTests.swift; sourceTree = "<group>"; };
 		1E30B29A2E8FD79400F0F209 /* SimpleNavi.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SimpleNavi.entitlements; sourceTree = "<group>"; };
 		1E30B29B2E8FD83000F0F209 /* SimpleNaviDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SimpleNaviDebug.entitlements; sourceTree = "<group>"; };
+		1E30B2A000000000000000A1 /* SharedDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDataStore.swift; sourceTree = "<group>"; };
+		1E30B2A02E8FE0BE00F0F209 /* SimpleNaviWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SimpleNaviWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		1E30B2A100000000000000A2 /* LiveActivityModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityModels.swift; sourceTree = "<group>"; };
+		1E30B2A200000000000000A3 /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
+		1E30B2A22E8FE0BE00F0F209 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		1E30B2A42E8FE0BE00F0F209 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		1E30B2BC2E8FE12700F0F209 /* SimpleNaviWidgetsExtensionDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SimpleNaviWidgetsExtensionDebug.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1E30B2BA2E8FE0BF00F0F209 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1E30B29F2E8FE0BE00F0F209 /* SimpleNaviWidgetsExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		1E30B2A62E8FE0BE00F0F209 /* SimpleNaviWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (1E30B2BA2E8FE0BF00F0F209 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = SimpleNaviWidgets; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		1A1A1A131A1A1A13 /* Frameworks */ = {
@@ -76,13 +126,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1E30B29D2E8FE0BE00F0F209 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1E30B2A52E8FE0BE00F0F209 /* SwiftUI.framework in Frameworks */,
+				1E30B2A32E8FE0BE00F0F209 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		1A1A1A0D1A1A1A0D = {
 			isa = PBXGroup;
 			children = (
+				1E30B2BC2E8FE12700F0F209 /* SimpleNaviWidgetsExtensionDebug.entitlements */,
 				1A1A1A181A1A1A18 /* SimpleNavi */,
+				1E30B2A62E8FE0BE00F0F209 /* SimpleNaviWidgets */,
+				1E30B2A12E8FE0BE00F0F209 /* Frameworks */,
 				1A1A1A171A1A1A17 /* Products */,
 				1E30B2992E8FCB2600F0F209 /* Recovered References */,
 			);
@@ -93,6 +155,7 @@
 			children = (
 				1A1A1A161A1A1A16 /* SimpleNavi.app */,
 				1A1A1A611A1A1A61 /* SimpleNaviTests.xctest */,
+				1E30B2A02E8FE0BE00F0F209 /* SimpleNaviWidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,6 +171,9 @@
 				1A1A1A271A1A1A27 /* SetupView.swift */,
 				1A1A1A311A1A1A31 /* SetupViewSimple.swift */,
 				1A1A1A291A1A1A29 /* CompassView.swift */,
+				1E30B2A000000000000000A1 /* SharedDataStore.swift */,
+				1E30B2A100000000000000A2 /* LiveActivityModels.swift */,
+				1E30B2A200000000000000A3 /* LiveActivityManager.swift */,
 				1A1A1A2B1A1A1A2B /* GeocodingService.swift */,
 				1A1A1A2D1A1A1A2D /* JapaneseAddressManager.swift */,
 				1A1A1A2F1A1A1A2F /* AddressMapConfirmView.swift */,
@@ -139,6 +205,15 @@
 			name = "Recovered References";
 			sourceTree = "<group>";
 		};
+		1E30B2A12E8FE0BE00F0F209 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1E30B2A22E8FE0BE00F0F209 /* WidgetKit.framework */,
+				1E30B2A42E8FE0BE00F0F209 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -149,10 +224,12 @@
 				1A1A1A121A1A1A12 /* Sources */,
 				1A1A1A131A1A1A13 /* Frameworks */,
 				1A1A1A141A1A1A14 /* Resources */,
+				1E30B2B72E8FE0BF00F0F209 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				1E30B2B52E8FE0BF00F0F209 /* PBXTargetDependency */,
 			);
 			name = SimpleNavi;
 			productName = SimpleNavi;
@@ -177,6 +254,28 @@
 			productReference = 1A1A1A611A1A1A61 /* SimpleNaviTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		1E30B29F2E8FE0BE00F0F209 /* SimpleNaviWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1E30B2BB2E8FE0BF00F0F209 /* Build configuration list for PBXNativeTarget "SimpleNaviWidgetsExtension" */;
+			buildPhases = (
+				1E30B29C2E8FE0BE00F0F209 /* Sources */,
+				1E30B29D2E8FE0BE00F0F209 /* Frameworks */,
+				1E30B29E2E8FE0BE00F0F209 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1E30B2A62E8FE0BE00F0F209 /* SimpleNaviWidgets */,
+			);
+			name = SimpleNaviWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = SimpleNaviWidgetsExtension;
+			productReference = 1E30B2A02E8FE0BE00F0F209 /* SimpleNaviWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -184,11 +283,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1540;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1540;
 				TargetAttributes = {
 					1A1A1A151A1A1A15 = {
 						CreatedOnToolsVersion = 15.4;
+					};
+					1E30B29F2E8FE0BE00F0F209 = {
+						CreatedOnToolsVersion = 26.0.1;
 					};
 				};
 			};
@@ -209,6 +311,7 @@
 			targets = (
 				1A1A1A151A1A1A15 /* SimpleNavi */,
 				1A1A1A601A1A1A60 /* SimpleNaviTests */,
+				1E30B29F2E8FE0BE00F0F209 /* SimpleNaviWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -224,6 +327,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		1A1A1A6C1A1A1A6C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1E30B29E2E8FE0BE00F0F209 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -251,6 +361,9 @@
 				1A1A1A381A1A1A38 /* DonationView.swift in Sources */,
 				1A1A1A1A1A1A1A1A /* SimpleNaviApp.swift in Sources */,
 				1A1A1A401A1A1A40 /* SecureStorage.swift in Sources */,
+				1E30B2A300000000000000B1 /* SharedDataStore.swift in Sources */,
+				1E30B2A400000000000000B2 /* LiveActivityModels.swift in Sources */,
+				1E30B2A500000000000000B3 /* LiveActivityManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -262,6 +375,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1E30B29C2E8FE0BE00F0F209 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1E30B2CB2E8FE28000F0F209 /* LiveActivityModels.swift in Sources */,
+				1E30B2CC2E8FE29700F0F209 /* LiveActivityManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -270,6 +392,11 @@
 			name = SimpleNavi;
 			target = 1A1A1A151A1A1A15 /* SimpleNavi */;
 			targetProxy = 1A1A1A691A1A1A69 /* PBXContainerItemProxy */;
+		};
+		1E30B2B52E8FE0BF00F0F209 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1E30B29F2E8FE0BE00F0F209 /* SimpleNaviWidgetsExtension */;
+			targetProxy = 1E30B2B42E8FE0BF00F0F209 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -503,6 +630,66 @@
 			};
 			name = Release;
 		};
+		1E30B2B82E8FE0BF00F0F209 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = SimpleNaviWidgetsExtensionDebug.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = K2ZG73WM9X;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SimpleNaviWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SimpleNaviWidgets;
+				INFOPLIST_KEY_NSHUMANReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenavi.SimpleNaviWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1E30B2B92E8FE0BF00F0F209 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = K2ZG73WM9X;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SimpleNaviWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SimpleNaviWidgets;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenavi.SimpleNaviWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -529,6 +716,15 @@
 			buildConfigurations = (
 				1A1A1A6D1A1A1A6D /* Debug */,
 				1A1A1A6E1A1A1A6E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1E30B2BB2E8FE0BF00F0F209 /* Build configuration list for PBXNativeTarget "SimpleNaviWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1E30B2B82E8FE0BF00F0F209 /* Debug */,
+				1E30B2B92E8FE0BF00F0F209 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

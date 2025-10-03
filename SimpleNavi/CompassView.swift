@@ -22,6 +22,11 @@ struct CompassView: View {
     // 动态渲染参数（前台优先体验，120Hz更顺滑）
     @State private var angleEpsilon: Double = 0.12 // 最小角度阈值，前台/120Hz 会下调
     @State private var arrowAnimDuration: Double = 0.10 // 动画时长，前台/120Hz 会下调
+    // 发布到 App Group 的节流/合并控制
+    @State private var publishWork: DispatchWorkItem?
+    @State private var lastPublishedDistance: Double = .nan
+    @State private var lastPublishedBearing: Double = .nan
+    private let publishCoalesceInterval: TimeInterval = 0.5 // 合并间隔（~2Hz 最大）
     
     
     private var destinationLabels: [String] {
@@ -363,6 +368,8 @@ struct CompassView: View {
         .onChange(of: locationManager.currentHeading) { _ in
             // 设备朝向变化时，更新箭头显示角度（按最短角度差累积）
             updateArrowRotation()
+            // 合并调度发布，避免每次朝向微动都触发存取与 Widget 刷新
+            schedulePublish()
         }
         .sheet(isPresented: $showDonation) {
             DonationView(isPresented: $showDonation)
@@ -467,6 +474,8 @@ struct CompassView: View {
         }
         
         calculateDirectionAndDistance(to: destinationCoord)
+        // 距离/角度刷新后，调度合并发布（仅写入 App Group，已在 SharedDataStore 内部再做节流与刷新聚合）
+        schedulePublish()
     }
     
     private func calculateDirectionAndDistance(to destination: CLLocationCoordinate2D) {
@@ -593,6 +602,74 @@ struct CompassView: View {
             selectedDestination = idx
             updateDirection()
         }
+    }
+
+    // 合并调度发布到 App Group，避免高频写入与刷新
+    private func schedulePublish() {
+        // 取消上一次调度
+        publishWork?.cancel()
+        let work = DispatchWorkItem { [distance, angle] in
+            let slot = currentSlotIndex()
+            let label = destinationLabels[slot]
+            let bearingRel = wrapDelta(angle - locationManager.currentHeading)
+
+            // 若变化极小则直接跳过
+            let lastD = lastPublishedDistance
+            let lastB = lastPublishedBearing
+            let distDiff = abs(distance - (lastD.isNaN ? distance : lastD))
+            var bDiff = bearingRel - (lastB.isNaN ? bearingRel : lastB)
+            bDiff = bDiff.truncatingRemainder(dividingBy: 360)
+            if bDiff > 180 { bDiff -= 360 }
+            if bDiff < -180 { bDiff += 360 }
+            if distDiff < 1.0 && abs(bDiff) < 0.5 {
+                return
+            }
+
+            let snapshot = NaviSnapshot(
+                slot: slot,
+                destinationLabel: label,
+                distanceMeters: distance,
+                bearingRelToDevice: bearingRel,
+                lastUpdated: Date()
+            )
+            SharedDataStore.shared.save(snapshot: snapshot)
+            lastPublishedDistance = distance
+            lastPublishedBearing = bearingRel
+
+            // 即使禁用了 Live Activity，下面调用也会被内部开关短路；保留以便未来一键恢复
+            LiveActivityManager.shared.startIfAvailable(slot: slot, destinationLabel: label)
+            LiveActivityManager.shared.update(distanceMeters: distance, bearingRelToDevice: bearingRel)
+        }
+        publishWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + publishCoalesceInterval, execute: work)
+    }
+
+    // 当前所选地址对应的槽位（0: Home, 1: Work, 2: Other）
+    private func currentSlotIndex() -> Int {
+        guard selectedDestination < addresses.count else { return 0 }
+        let currentAddr = addresses[selectedDestination]
+        if currentAddr == (getAddress(forKey: UDKeys.address1) ?? "") { return 0 }
+        if currentAddr == (getAddress(forKey: UDKeys.address2) ?? "") { return 1 }
+        if currentAddr == (getAddress(forKey: UDKeys.address3) ?? "") { return 2 }
+        return 0
+    }
+
+    // 向 App Group 与 Live Activities 发布当前导航快照
+    private func publishLiveData() {
+        guard selectedDestination < destinationCoordinates.count else { return }
+        let slot = currentSlotIndex()
+        let label = destinationLabels[slot]
+        let bearingRel = wrapDelta(angle - locationManager.currentHeading)
+        let snapshot = NaviSnapshot(
+            slot: slot,
+            destinationLabel: label,
+            distanceMeters: distance,
+            bearingRelToDevice: bearingRel,
+            lastUpdated: Date()
+        )
+        SharedDataStore.shared.save(snapshot: snapshot)
+        LiveActivityManager.shared.startIfAvailable(slot: slot, destinationLabel: label)
+        LiveActivityManager.shared.update(distanceMeters: distance, bearingRelToDevice: bearingRel)
     }
 
     private var destinationIconSwitcher: some View {

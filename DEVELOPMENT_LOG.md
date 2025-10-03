@@ -75,6 +75,42 @@
 
 ---
 
+### 第十二阶段: Live Activity 下线 + Widget 显示与性能优化
+**时间**: 2025-10-03
+
+**目标**: 先下线灵动岛（Live Activity），聚焦锁屏/主屏 Widget 的稳定显示与低功耗更新。
+
+**主要改动**:
+- UI/显示
+  - 锁屏/横幅布局改为“箭头 + 距离”横向并排，提升信息密度。
+  - 箭头视图 `ArrowView` 改为“容器 > 箭头 glyph”的自适应策略，glyph 自动填满容器（无内边距），视觉更大更清晰。
+  - 动态岛尺寸全面下调，同时为后续可选恢复保留实现。
+- 旋转行为
+  - 新增 `displayBearing`（最短角度差累计），避免跨 0° 时出现整圈旋转的视觉跳跃。
+  - 文件：`SimpleNavi/LiveActivityModels.swift`、`SimpleNavi/LiveActivityManager.swift`。
+- Live Activity 下线
+  - `SimpleNaviWidgetsBundle.swift` 注释 `SimpleNaviWidgetsLiveActivity()`，扩展不再注册实况活动。
+  - App 端加总开关：`LiveActivityManager.isEnabled = false`，所有启动/更新/结束 API 直接短路返回。
+- 性能优化
+  - `SharedDataStore`：
+    - 写入与刷新在串行队列合并，新增距离/角度阈值过滤（2m/1°），最小写入间隔 0.4s。
+    - 用 `WidgetCenter.shared.reloadTimelines(ofKind:)` 并做 ~2s 刷新合并，避免全量刷新和高频唤醒。
+  - `CompassView`：
+    - 新增 `schedulePublish()` 对 App Group 快照写入做前端合并（~0.5s），减少高频写入。
+    - 前/后台显示配置保留：前台更细步进和更短动画，后台更省电。
+
+**构建健康**:
+- Release（模拟器）构建通过：
+  - `SimpleNavi` ✅
+  - `SimpleNaviWidgetsExtension` ✅
+- 配置确认：扩展 `IPHONEOS_DEPLOYMENT_TARGET = 16.1`；`SWIFT_VERSION = 5.0`；`GENERATE_INFOPLIST_FILE = YES`；`INFOPLIST_FILE = SimpleNaviWidgets/Info.plist`。
+
+**后续建议**:
+- 若恢复 Live Activity：只需恢复 `WidgetBundle` 注册并将 `isEnabled` 置为 true。
+- 可按“近距离更灵敏、远距离更省电”策略做阈值自适应。
+
+---
+
 ## 开发历程记录
 
 ### 第一阶段: 项目创建和基础功能

@@ -8,6 +8,9 @@ struct SimpleNaviActivityAttributes: ActivityAttributes {
         var distanceMeters: Double
         /// Bearing relative to device heading, degrees in [-180, 180]
         var bearingRelToDevice: Double
+        /// A cumulatively smoothed angle that only moves by the shortest delta
+        /// between successive updates,用于避免 >360° 的视觉旋转。
+        var displayBearing: Double
         var lastUpdated: Date
     }
 
