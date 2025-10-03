@@ -8,5 +8,7 @@
 	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>

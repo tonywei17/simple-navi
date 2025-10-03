@@ -26,6 +26,16 @@
 		1A1A1A641A1A1A64 /* SimpleNaviTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A631A1A1A63 /* SimpleNaviTests.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		1A1A1A691A1A1A69 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A1A1A0E1A1A1A0E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1A1A1A151A1A1A15;
+			remoteInfo = SimpleNavi;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		1A1A1A161A1A1A16 /* SimpleNavi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimpleNavi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A1A1A191A1A1A19 /* SimpleNaviApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleNaviApp.swift; sourceTree = "<group>"; };
@@ -45,8 +55,10 @@
 		1A1A1A3B1A1A1A3B /* Coordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinates.swift; sourceTree = "<group>"; };
 		1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsKeys.swift; sourceTree = "<group>"; };
 		1A1A1A3E1A1A1A3E /* SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStorage.swift; sourceTree = "<group>"; };
-		1A1A1A631A1A1A63 /* SimpleNaviTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleNaviTests.swift; sourceTree = "<group>"; };
 		1A1A1A611A1A1A61 /* SimpleNaviTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimpleNaviTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A1A1A631A1A1A63 /* SimpleNaviTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleNaviTests.swift; sourceTree = "<group>"; };
+		1E30B29A2E8FD79400F0F209 /* SimpleNavi.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SimpleNavi.entitlements; sourceTree = "<group>"; };
+		1E30B29B2E8FD83000F0F209 /* SimpleNaviDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SimpleNaviDebug.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,13 +69,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-        1A1A1A661A1A1A66 /* Frameworks */ = {
-            isa = PBXFrameworksBuildPhase;
-            buildActionMask = 2147483647;
-            files = (
-            );
-            runOnlyForDeploymentPostprocessing = 0;
-        };
+		1A1A1A661A1A1A66 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -72,6 +84,7 @@
 			children = (
 				1A1A1A181A1A1A18 /* SimpleNavi */,
 				1A1A1A171A1A1A17 /* Products */,
+				1E30B2992E8FCB2600F0F209 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -87,6 +100,8 @@
 		1A1A1A181A1A1A18 /* SimpleNavi */ = {
 			isa = PBXGroup;
 			children = (
+				1E30B29B2E8FD83000F0F209 /* SimpleNaviDebug.entitlements */,
+				1E30B29A2E8FD79400F0F209 /* SimpleNavi.entitlements */,
 				1A1A1A331A1A1A33 /* Info.plist */,
 				1A1A1A191A1A1A19 /* SimpleNaviApp.swift */,
 				1A1A1A1B1A1A1A1B /* ContentView.swift */,
@@ -108,20 +123,20 @@
 			path = SimpleNavi;
 			sourceTree = "<group>";
 		};
-		1A1A1A621A1A1A62 /* SimpleNaviTests */ = {
-			isa = PBXGroup;
-			children = (
-				1A1A1A631A1A1A63 /* SimpleNaviTests.swift */,
-			);
-			path = SimpleNaviTests;
-			sourceTree = "<group>";
-		};
 		1A1A1A1F1A1A1A1F /* Preview Content */ = {
 			isa = PBXGroup;
 			children = (
 				1A1A1A201A1A1A20 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		1E30B2992E8FCB2600F0F209 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				1A1A1A631A1A1A63 /* SimpleNaviTests.swift */,
+			);
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -144,24 +159,24 @@
 			productReference = 1A1A1A161A1A1A16 /* SimpleNavi.app */;
 			productType = "com.apple.product-type.application";
 		};
-        1A1A1A601A1A1A60 /* SimpleNaviTests */ = {
-            isa = PBXNativeTarget;
-            buildConfigurationList = 1A1A1A6F1A1A1A6F /* Build configuration list for PBXNativeTarget "SimpleNaviTests" */;
-            buildPhases = (
-                1A1A1A651A1A1A65 /* Sources */,
-                1A1A1A661A1A1A66 /* Frameworks */,
-                1A1A1A6C1A1A1A6C /* Resources */,
-            );
-            buildRules = (
-            );
-            dependencies = (
-                1A1A1A681A1A1A68 /* PBXTargetDependency */,
-            );
-            name = SimpleNaviTests;
-            productName = SimpleNaviTests;
-            productReference = 1A1A1A611A1A1A61 /* SimpleNaviTests.xctest */;
-            productType = "com.apple.product-type.bundle.unit-test";
-        };
+		1A1A1A601A1A1A60 /* SimpleNaviTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A1A1A6F1A1A1A6F /* Build configuration list for PBXNativeTarget "SimpleNaviTests" */;
+			buildPhases = (
+				1A1A1A651A1A1A65 /* Sources */,
+				1A1A1A661A1A1A66 /* Frameworks */,
+				1A1A1A6C1A1A1A6C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1A1A1A681A1A1A68 /* PBXTargetDependency */,
+			);
+			name = SimpleNaviTests;
+			productName = SimpleNaviTests;
+			productReference = 1A1A1A611A1A1A61 /* SimpleNaviTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -198,25 +213,6 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXContainerItemProxy section */
-        1A1A1A691A1A1A69 /* PBXContainerItemProxy */ = {
-            isa = PBXContainerItemProxy;
-            containerPortal = 1A1A1A0E1A1A1A0E /* Project object */;
-            proxyType = 1;
-            remoteGlobalIDString = 1A1A1A151A1A1A15;
-            remoteInfo = SimpleNavi;
-        };
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXTargetDependency section */
-        1A1A1A681A1A1A68 /* PBXTargetDependency */ = {
-            isa = PBXTargetDependency;
-            name = SimpleNavi;
-            target = 1A1A1A151A1A1A15 /* SimpleNavi */;
-            targetProxy = 1A1A1A691A1A1A69 /* PBXContainerItemProxy */;
-        };
-/* End PBXTargetDependency section */
-
 /* Begin PBXResourcesBuildPhase section */
 		1A1A1A141A1A1A14 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
@@ -227,13 +223,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-        1A1A1A6C1A1A1A6C /* Resources */ = {
-            isa = PBXResourcesBuildPhase;
-            buildActionMask = 2147483647;
-            files = (
-            );
-            runOnlyForDeploymentPostprocessing = 0;
-        };
+		1A1A1A6C1A1A1A6C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -258,15 +254,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-        1A1A1A651A1A1A65 /* Sources */ = {
-            isa = PBXSourcesBuildPhase;
-            buildActionMask = 2147483647;
-            files = (
-                1A1A1A641A1A1A64 /* SimpleNaviTests.swift in Sources */,
-            );
-            runOnlyForDeploymentPostprocessing = 0;
-        };
+		1A1A1A651A1A1A65 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A1A1A641A1A1A64 /* SimpleNaviTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1A1A1A681A1A1A68 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = SimpleNavi;
+			target = 1A1A1A151A1A1A15 /* SimpleNavi */;
+			targetProxy = 1A1A1A691A1A1A69 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1A1A1A221A1A1A22 /* Debug */ = {
@@ -393,6 +398,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = SimpleNavi/SimpleNavi.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_ASSET_PATHS = "\"SimpleNavi/Preview Content\"";
@@ -427,6 +433,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = SimpleNavi/SimpleNavi.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_ASSET_PATHS = "\"SimpleNavi/Preview Content\"";
@@ -456,46 +463,46 @@
 			};
 			name = Release;
 		};
-        1A1A1A6D1A1A1A6D /* Debug */ = {
-            isa = XCBuildConfiguration;
-            buildSettings = {
-                ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-                CODE_SIGN_STYLE = Automatic;
-                GENERATE_INFOPLIST_FILE = YES;
-                INFOPLIST_KEY_CFBundleDisplayName = "SimpleNaviTests";
-                LD_RUNPATH_SEARCH_PATHS = (
-                    "$(inherited)",
-                    "@executable_path/Frameworks",
-                    "@loader_path/Frameworks",
-                );
-                IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-                PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenaviTests;
-                PRODUCT_NAME = "$(TARGET_NAME)";
-                SWIFT_VERSION = 5.0;
-                TESTHost = "";
-            };
-            name = Debug;
-        };
-        1A1A1A6E1A1A1A6E /* Release */ = {
-            isa = XCBuildConfiguration;
-            buildSettings = {
-                ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-                CODE_SIGN_STYLE = Automatic;
-                GENERATE_INFOPLIST_FILE = YES;
-                INFOPLIST_KEY_CFBundleDisplayName = "SimpleNaviTests";
-                LD_RUNPATH_SEARCH_PATHS = (
-                    "$(inherited)",
-                    "@executable_path/Frameworks",
-                    "@loader_path/Frameworks",
-                );
-                IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-                PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenaviTests;
-                PRODUCT_NAME = "$(TARGET_NAME)";
-                SWIFT_VERSION = 5.0;
-                TESTHost = "";
-            };
-            name = Release;
-        };
+		1A1A1A6D1A1A1A6D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SimpleNaviTests;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenaviTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TESTHost = "";
+			};
+			name = Debug;
+		};
+		1A1A1A6E1A1A1A6E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SimpleNaviTests;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenaviTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TESTHost = "";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -517,15 +524,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-        1A1A1A6F1A1A1A6F /* Build configuration list for PBXNativeTarget "SimpleNaviTests" */ = {
-            isa = XCConfigurationList;
-            buildConfigurations = (
-                1A1A1A6D1A1A1A6D /* Debug */,
-                1A1A1A6E1A1A1A6E /* Release */,
-            );
-            defaultConfigurationIsVisible = 0;
-            defaultConfigurationName = Release;
-        };
+		1A1A1A6F1A1A1A6F /* Build configuration list for PBXNativeTarget "SimpleNaviTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A1A1A6D1A1A1A6D /* Debug */,
+				1A1A1A6E1A1A1A6E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 	};
 	rootObject = 1A1A1A0E1A1A1A0E /* Project object */;
