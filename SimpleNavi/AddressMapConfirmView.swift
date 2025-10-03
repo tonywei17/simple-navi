@@ -286,7 +286,7 @@ struct AddressMapConfirmView: View {
                 )
                 errorMessage = nil
                 
-            case .failure(let error):
+            case .failure:
                 errorMessage = String(localized: .reverseGeocodeFailed)
                 // 回退：使用当前地图中心做反向地理编码以显示可用地址
                 let center = region.center

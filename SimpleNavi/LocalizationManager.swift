@@ -235,7 +235,7 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
     ],
     
     .chinese: [
-        .appName: "简单导航",
+        .appName: "极简导航",
         .settings: "设置",
         .save: "保存",
         .cancel: "取消",
@@ -246,7 +246,7 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .loading: "加载中",
         .error: "错误",
         
-        .setupTitle: "简单导航",
+        .setupTitle: "极简导航",
         .setupSubtitle: "设置重要地址",
         .address1Home: "地址 1 (家)",
         .address2Work: "地址 2 (工作)",
@@ -311,7 +311,7 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
     ],
     
     .japanese: [
-        .appName: "簡単ナビゲーション",
+        .appName: "シンプルナビ",
         .settings: "設定",
         .save: "保存",
         .cancel: "キャンセル",
@@ -322,7 +322,7 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .loading: "読み込み中",
         .error: "エラー",
         
-        .setupTitle: "簡単ナビゲーション",
+        .setupTitle: "シンプルナビ",
         .setupSubtitle: "重要な住所を設定",
         .address1Home: "住所 1 (自宅)",
         .address2Work: "住所 2 (職場)",

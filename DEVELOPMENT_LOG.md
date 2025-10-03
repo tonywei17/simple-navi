@@ -137,6 +137,27 @@
 .padding(.top, -40) // 极致紧凑布局
 ```
 
+### 第九阶段: 应用名称与本地化更新
+**时间**: 2025-10-03
+**需求**: 主屏幕和设置页使用新名称，并按语言显示
+
+**实现**:
+1. 更新 `LocalizationManager.swift`：
+   - 中文名称改为「极简导航」
+   - 日文名称改为「シンプルナビ」
+   - 英文保持「Simple Navigation」
+   - 设置页标题 `setupTitle` 同步更新
+2. 新增 `InfoPlist.strings` 本地化文件：
+   - `SimpleNavi/en.lproj/InfoPlist.strings`：`CFBundleDisplayName = "Simple Navigation";`
+   - `SimpleNavi/zh-Hans.lproj/InfoPlist.strings`：`CFBundleDisplayName = "极简导航";`
+   - `SimpleNavi/ja.lproj/InfoPlist.strings`：`CFBundleDisplayName = "シンプルナビ";`
+3. 更新 Xcode 配置：
+   - `project.pbxproj` 的 `knownRegions` 增加 `ja` 与 `zh-Hans`
+   - Debug/Release 默认 `INFOPLIST_KEY_CFBundleDisplayName` 修改为 "Simple Navigation"
+
+**注意**:
+- 需在 Xcode 中将上述 `InfoPlist.strings` 作为 Variant Group 加入 Target 的 Resources，确保应用图标名称按语言显示。
+
 ---
 
 ## 当前重大问题: 语言选择器功能失效
@@ -383,6 +404,13 @@ SimpleNavi/
 ---
 
 **日志创建时间**: 2025-09-09
-**最后更新**: 2025-09-09
+**最后更新**: 2025-10-03
 **当前版本**: 开发版本
 **测试状态**: 语言选择器功能待修复
+
+2025-10-03:
+- [x] Localization updates:
+  - Created a new `LocalizedStringKey` enum for easier string localization
+  - Created a new `LocalizationManager` class for managing the current language
+  - Updated all views to use the new localization manager
+  - Added Japanese language support

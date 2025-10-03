@@ -183,6 +183,8 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				ja,
+				"zh-Hans",
 				Base,
 			);
 			mainGroup = 1A1A1A0D1A1A1A0D;
@@ -398,7 +400,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SimpleNavi/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "简单导航";
+				INFOPLIST_KEY_CFBundleDisplayName = "Simple Navigation";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
@@ -432,7 +434,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SimpleNavi/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "简单导航";
+				INFOPLIST_KEY_CFBundleDisplayName = "Simple Navigation";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
