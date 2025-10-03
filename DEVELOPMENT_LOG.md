@@ -48,6 +48,33 @@
 
 ---
 
+### 第十一阶段: 120Hz 渲染优化 + 1.2 发布
+**时间**: 2025-10-03
+**目标**: 在具备 ProMotion 的 iPhone 上让指南针旋转更顺滑（120Hz），同时保留点击箭头的“弹簧回弹”趣味动画。
+
+**主要改动**:
+- `Info.plist`
+  - 新增 `CADisableMinimumFrameDurationOnPhone = true`，允许 120Hz 刷新。
+- `CompassView.swift`
+  - 新增前/后台与设备刷新率感知的“显示配置”档位：
+    - 前台且高刷：`angleEpsilon = 0.06`、`arrowAnimDuration = 0.07`、`headingFilter = 0.5°`。
+    - 被动/后台：`angleEpsilon = 0.18`、`arrowAnimDuration = 0.12`、`headingFilter = 1.5°`。
+  - 常规指向更新采用短时线性动画；点击箭头的一圈旋转仍使用 `interpolatingSpring(stiffness: 120, damping: 10)`，保持弹性手感不变。
+
+**构建与发布**:
+- 清理资源告警：移除未在 `Contents.json` 引用的 App Icon 文件 `simple-navi-iOS-Default-1024x1024@1x.png`。
+- 版本与构建号：`MARKETING_VERSION = 1.2`，`CURRENT_PROJECT_VERSION = 10`（Debug/Release 统一）。
+- 以 tag `v1.2` 推送，Xcode Cloud 自动归档并上传 App Store Connect。
+
+**验证**:
+- 在 120Hz 设备上自然旋转手机，箭头跟随更连贯；点击箭头仍保留“旋转一圈+回弹”的动画风格。
+- 非高刷设备维持既有流畅度与能耗平衡。
+
+**兼容性**:
+- iOS 15+ 目标版本不变；上述优化为参数级调整，无额外运行时依赖。
+
+---
+
 ## 开发历程记录
 
 ### 第一阶段: 项目创建和基础功能
