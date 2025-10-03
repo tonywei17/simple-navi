@@ -328,10 +328,13 @@ struct CompassView: View {
             }
         }
         .onChange(of: showSettings) { newValue in
-            // 当从设置页返回时，刷新地址与方向
-            if newValue == false {
+            // 进入设置页时暂停磁力计，降低CPU与能耗；返回时恢复并刷新
+            if newValue {
+                locationManager.stopHeadingUpdates()
+            } else {
                 loadAddresses()
                 updateDirection()
+                locationManager.startHeadingUpdates()
             }
         }
         // 实时位置变化时，刷新距离与方向（使用发布者，避免 Equatable 限制）
@@ -362,31 +365,63 @@ struct CompassView: View {
     private func loadAddresses() {
         var loadedAddresses: [String] = []
         var loadedCoordinates: [CLLocationCoordinate2D] = []
-        
+
+        func readSavedCoord(slot: Int) -> CLLocationCoordinate2D? {
+            let latKey = slot == 1 ? UDKeys.address1Lat : slot == 2 ? UDKeys.address2Lat : UDKeys.address3Lat
+            let lonKey = slot == 1 ? UDKeys.address1Lon : slot == 2 ? UDKeys.address2Lon : UDKeys.address3Lon
+            if let latStr = SecureStorage.shared.getString(forKey: latKey),
+               let lonStr = SecureStorage.shared.getString(forKey: lonKey),
+               let lat = Double(latStr), let lon = Double(lonStr) {
+                return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            }
+            return nil
+        }
+
+        // slot 1
         if let addr1 = getAddress(forKey: UDKeys.address1), !addr1.isEmpty {
             loadedAddresses.append(addr1)
-            geocodeAndStoreAddress(addr1, index: loadedCoordinates.count)
-            loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
+            if let coord = readSavedCoord(slot: 1) {
+                loadedCoordinates.append(coord)
+            } else {
+                loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0))
+                geocodeAndStoreAddress(addr1, index: loadedCoordinates.count - 1, slot: 1)
+            }
         }
+        // slot 2
         if let addr2 = getAddress(forKey: UDKeys.address2), !addr2.isEmpty {
             loadedAddresses.append(addr2)
-            geocodeAndStoreAddress(addr2, index: loadedCoordinates.count)
-            loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
+            if let coord = readSavedCoord(slot: 2) {
+                loadedCoordinates.append(coord)
+            } else {
+                loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0))
+                geocodeAndStoreAddress(addr2, index: loadedCoordinates.count - 1, slot: 2)
+            }
         }
+        // slot 3
         if let addr3 = getAddress(forKey: UDKeys.address3), !addr3.isEmpty {
             loadedAddresses.append(addr3)
-            geocodeAndStoreAddress(addr3, index: loadedCoordinates.count)
-            loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0)) // 占位符
+            if let coord = readSavedCoord(slot: 3) {
+                loadedCoordinates.append(coord)
+            } else {
+                loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0))
+                geocodeAndStoreAddress(addr3, index: loadedCoordinates.count - 1, slot: 3)
+            }
         }
-        
+
         addresses = loadedAddresses
         destinationCoordinates = loadedCoordinates
     }
     
-    private func geocodeAndStoreAddress(_ address: String, index: Int) {
+    private func geocodeAndStoreAddress(_ address: String, index: Int, slot: Int) {
         geocodingService.geocodeAddress(address) { coordinate in
             guard let coordinate = coordinate else { return }
-            
+
+            // Persist coordinates for this slot so we no longer re-geocode on next launches
+            let latKey = slot == 1 ? UDKeys.address1Lat : slot == 2 ? UDKeys.address2Lat : UDKeys.address3Lat
+            let lonKey = slot == 1 ? UDKeys.address1Lon : slot == 2 ? UDKeys.address2Lon : UDKeys.address3Lon
+            SecureStorage.shared.setString(String(coordinate.latitude), forKey: latKey)
+            SecureStorage.shared.setString(String(coordinate.longitude), forKey: lonKey)
+
             DispatchQueue.main.async {
                 if index < self.destinationCoordinates.count {
                     self.destinationCoordinates[index] = coordinate
@@ -457,6 +492,8 @@ struct CompassView: View {
         let target = angle - locationManager.currentHeading
         // 与当前显示角度的最短差值
         let diff = wrapDelta(target - arrowRotation)
+        // 对极小角度变化不做动画更新，减少频繁重绘与能耗
+        if abs(diff) < 0.2 { return }
         // 采用最短路径更新显示角度（避免跨 0° 时出现整圈旋转）
         if isSpinning {
             // 旋转一圈动画进行中：为了避免动画冲突，立即更新，无额外动画
@@ -651,7 +688,8 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         
         // 启用磁力计方向检测
         if CLLocationManager.headingAvailable() {
-            locationManager.headingFilter = kCLHeadingFilterNone // 不做角度滤波，让系统尽快提供真北
+            // 细粒度角度步进（1°）即可满足指向需求，同时显著降低回调频率
+            locationManager.headingFilter = 1
             updateHeadingOrientation() // 根据设备方向设置合适的 headingOrientation
         }
         
@@ -726,10 +764,14 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         let heading: CLLocationDirection
         if newHeading.trueHeading >= 0 {
             heading = newHeading.trueHeading
+            #if DEBUG
             print("使用真北方向：\(heading)°，accuracy=\(newHeading.headingAccuracy)")
+            #endif
         } else {
             heading = newHeading.magneticHeading
+            #if DEBUG
             print("使用磁北方向：\(heading)°，accuracy=\(newHeading.headingAccuracy)")
+            #endif
         }
         
         DispatchQueue.main.async {

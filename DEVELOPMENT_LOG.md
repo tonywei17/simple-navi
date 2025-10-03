@@ -9,6 +9,45 @@
 
 ---
 
+### 第十阶段: 地点设定稳定性修复 + 坐标持久化
+**时间**: 2025-10-03
+**问题**: 保存的地址在再次打开时被替换为其他行政区/邮编中心地址（例如固定变为“460-0001 … 三之丸 3-1-3 日本”）。
+
+**根因**:
+1. 仅保存了地址文本，没有保存确认时的坐标；再次进入会对文本重新地理编码，返回的坐标/反查地址不稳定。
+2. 地图中心变化时曾覆盖用户输入文本，造成“漂移”。
+
+**方案**: 文本+坐标“双持久化”，显示用文本，计算用坐标。
+
+**主要改动**:
+- `UserDefaultsKeys.swift`
+  - 新增 `address{1,2,3}Lat/Lon` 用于存储三组地址的经纬度。
+- `SetupView.swift` / `SetupViewSimple.swift`
+  - `ModernAddressInputField` 增加 `slot` 参数（1/2/3）。
+  - 打开 `AddressMapConfirmView` 时传入已保存坐标 `initialCoordinate`。
+  - 关闭确认页时同时保存 `confirmedCoordinate`，地址清空则清理对应坐标。
+- `AddressMapConfirmView.swift`
+  - 新增 `initialCoordinate`，若存在则直接用其初始化地图，避免首次 geocode 漂移。
+  - 去除对 `editableAddress` 的强制覆盖；但在“用户未手动编辑”时，允许用地图中心反查结果自动填充，确保与坐标一致。
+  - “确认此地址”时，若用户未手动编辑，则以 `centerAddress`（地图中心反查）作为最终文本。
+- `CompassView.swift`
+  - `loadAddresses()` 优先读取已保存坐标；无坐标时仅首次 geocode 一次并立即持久化。
+
+**验证用例**:
+1. 保存“463-0032 愛知県 名古屋市 白山 3-903 日本”→ 退出重进 → 文本保持一致，地图居中在保存点。
+2. 拖动地图后确认 → 文本更新为中心地址；再次进入仍保持。
+
+**性能微优化（本阶段已落地）**:
+- `CompassView.LocationManager`
+  - 将 `headingFilter` 设为 1°，显著降低方向回调频率。
+  - 进入设置页时暂停磁力计，返回时恢复。
+- 箭头刷新 `updateArrowRotation()`
+  - 小于 0.2° 的微小变化不触发动画，减少重绘。
+- 调试日志
+  - 方位打印包裹 `#if DEBUG`，避免 Release 噪音。
+
+---
+
 ## 开发历程记录
 
 ### 第一阶段: 项目创建和基础功能

@@ -150,7 +150,8 @@ struct SetupViewSimple: View {
                 label: String(localized: .address1Home),
                 address: $address1,
                 placeholder: String(localized: .enterHomeAddress),
-                isRequired: true
+                isRequired: true,
+                slot: 1
             )
             
             ModernAddressInputField(
@@ -159,7 +160,8 @@ struct SetupViewSimple: View {
                 label: String(localized: .address2Work),
                 address: $address2,
                 placeholder: String(localized: .enterWorkAddress),
-                isRequired: false
+                isRequired: false,
+                slot: 2
             )
             
             ModernAddressInputField(
@@ -168,7 +170,8 @@ struct SetupViewSimple: View {
                 label: String(localized: .address3Other),
                 address: $address3,
                 placeholder: String(localized: .enterOtherAddress),
-                isRequired: false
+                isRequired: false,
+                slot: 3
             )
         }
     }

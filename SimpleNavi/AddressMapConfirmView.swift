@@ -5,6 +5,8 @@ import UIKit
 
 struct AddressMapConfirmView: View {
     let address: String
+    // 如果外部已保存坐标，优先使用该坐标初始化地图中心，避免再次地理编码导致漂移
+    let initialCoordinate: CLLocationCoordinate2D?
     @Binding var isPresented: Bool
     @Binding var confirmedAddress: String
     @Binding var confirmedCoordinate: CLLocationCoordinate2D?
@@ -21,6 +23,9 @@ struct AddressMapConfirmView: View {
     @State private var centerAddress: String = ""
     @State private var geocodeDebounceWorkItem: DispatchWorkItem?
     @State private var editableAddress: String = ""
+    @State private var originalAddress: String = ""
+    @State private var userEditedAddress: Bool = false
+    @State private var programmaticUpdate: Bool = false
     @State private var addressTextHeight: CGFloat = 60
     @StateObject private var locationProvider = OneShotLocationProvider()
     @State private var didCenterToUserLocation: Bool = false
@@ -208,9 +213,35 @@ struct AddressMapConfirmView: View {
             .navigationBarHidden(true)
         }
         .onAppear {
-            editableAddress = address
+            setEditableAddressProgrammatically(address)
+            originalAddress = address
             locationProvider.start()
-            geocodeInitialAddress()
+            if let initCoord = initialCoordinate {
+                // 使用已保存坐标初始化，避免对文本再次地理编码产生偏移
+                region = MKCoordinateRegion(
+                    center: initCoord,
+                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                )
+                selectedCoordinate = initCoord
+                originalCoordinate = initCoord
+                // 反查已保存坐标，显示为中心地址；若用户尚未编辑，则同步到可编辑文本
+                addressManager.reverseGeocodeCoordinate(initCoord) { result in
+                    if case .success(let addr) = result {
+                        centerAddress = addr
+                        setEditableAddressProgrammatically(addr)
+                    } else {
+                        let fallback = formattedCoordinateString(initCoord)
+                        centerAddress = fallback
+                        setEditableAddressProgrammatically(fallback)
+                    }
+                }
+            } else {
+                geocodeInitialAddress()
+            }
+        }
+        .onChange(of: editableAddress) { _ in
+            // 仅当用户手动编辑时标记
+            if !programmaticUpdate { userEditedAddress = true }
         }
         .onChange(of: locationProvider.coordinate?.latitude) { _ in
             // 当初始地址为空且首次拿到用户定位时，用用户定位作为中心并反查地址
@@ -295,13 +326,13 @@ struct AddressMapConfirmView: View {
                 addressManager.reverseGeocodeCoordinate(center) { result in
                     if case .success(let addr) = result {
                         centerAddress = addr
-                        editableAddress = addr
                         errorMessage = nil
+                        setEditableAddressProgrammatically(addr)
                     } else {
                         let fallback = formattedCoordinateString(center)
                         centerAddress = fallback
-                        editableAddress = fallback
                         errorMessage = String(localized: .reverseGeocodeFailed)
+                        setEditableAddressProgrammatically(fallback)
                     }
                 }
             }
@@ -322,9 +353,21 @@ struct AddressMapConfirmView: View {
         guard let coordinate = selectedCoordinate else { return }
         
         confirmedCoordinate = coordinate
-        let text = editableAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        var text = editableAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 如果用户未手动编辑，但我们有中心地址，则以中心地址为准，确保与地图选择一致
+        let centerTrimmed = centerAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !userEditedAddress, !centerTrimmed.isEmpty {
+            text = centerTrimmed
+        }
         confirmedAddress = text.isEmpty ? address : text
         isPresented = false
+    }
+
+    // MARK: - Programmatic text updates helper
+    private func setEditableAddressProgrammatically(_ value: String) {
+        programmaticUpdate = true
+        editableAddress = value
+        DispatchQueue.main.async { self.programmaticUpdate = false }
     }
 
     private func mapCenterChanged() {
@@ -339,13 +382,13 @@ struct AddressMapConfirmView: View {
                 switch result {
                 case .success(let addr):
                     centerAddress = addr
-                    editableAddress = addr
                     errorMessage = nil
+                    setEditableAddressProgrammatically(addr)
                 case .failure:
                     let fallback = formattedCoordinateString(center)
                     centerAddress = fallback
-                    editableAddress = fallback
                     errorMessage = String(localized: .reverseGeocodeFailed)
+                    setEditableAddressProgrammatically(fallback)
                 }
             }
         }
@@ -423,11 +466,11 @@ struct AddressMapConfirmView: View {
         }
     }
 }
-
 struct AddressMapConfirmView_Previews: PreviewProvider {
     static var previews: some View {
         AddressMapConfirmView(
             address: "愛知県名古屋市中区栄3-15-33",
+            initialCoordinate: nil,
             isPresented: .constant(true),
             confirmedAddress: .constant(""),
             confirmedCoordinate: .constant(nil)

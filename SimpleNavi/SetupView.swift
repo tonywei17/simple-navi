@@ -169,7 +169,8 @@ struct SetupView: View {
                                 label: String(localized: .address1Home),
                                 address: $address1,
                                 placeholder: String(localized: .enterHomeAddress),
-                                isRequired: true
+                                isRequired: true,
+                                slot: 1
                             )
                             
                             ModernAddressInputField(
@@ -178,7 +179,8 @@ struct SetupView: View {
                                 label: String(localized: .address2Work),
                                 address: $address2,
                                 placeholder: String(localized: .enterWorkAddress),
-                                isRequired: false
+                                isRequired: false,
+                                slot: 2
                             )
                             
                             ModernAddressInputField(
@@ -187,7 +189,8 @@ struct SetupView: View {
                                 label: String(localized: .address3Other),
                                 address: $address3,
                                 placeholder: String(localized: .enterOtherAddress),
-                                isRequired: false
+                                isRequired: false,
+                                slot: 3
                             )
                         }
                         .padding(.horizontal, 20)
@@ -282,6 +285,7 @@ struct ModernAddressInputField: View {
     @Binding var address: String
     let placeholder: String
     let isRequired: Bool
+    let slot: Int
     
     @State private var isFocused = false
     
@@ -292,6 +296,13 @@ struct ModernAddressInputField: View {
     @StateObject private var addressManager = JapaneseAddressManager.shared
     
     @ObservedObject private var localizationManager = LocalizationManager.shared
+
+    private var latKey: String {
+        switch slot { case 1: return UDKeys.address1Lat; case 2: return UDKeys.address2Lat; default: return UDKeys.address3Lat }
+    }
+    private var lonKey: String {
+        switch slot { case 1: return UDKeys.address1Lon; case 2: return UDKeys.address2Lon; default: return UDKeys.address3Lon }
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -419,8 +430,17 @@ struct ModernAddressInputField: View {
                 .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
         )
         .sheet(isPresented: $showMapConfirm) {
+            let initialCoord: CLLocationCoordinate2D? = {
+                if let latStr = SecureStorage.shared.getString(forKey: latKey),
+                   let lonStr = SecureStorage.shared.getString(forKey: lonKey),
+                   let lat = Double(latStr), let lon = Double(lonStr) {
+                    return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+                }
+                return nil
+            }()
             AddressMapConfirmView(
                 address: address,
+                initialCoordinate: initialCoord,
                 isPresented: $showMapConfirm,
                 confirmedAddress: $confirmedAddress,
                 confirmedCoordinate: $confirmedCoordinate
@@ -429,6 +449,16 @@ struct ModernAddressInputField: View {
                 if !confirmedAddress.isEmpty {
                     address = confirmedAddress
                     // 保存到加密存储（父视图通过绑定会触发 onChange）
+                }
+                if let coord = confirmedCoordinate {
+                    SecureStorage.shared.setString(String(coord.latitude), forKey: latKey)
+                    SecureStorage.shared.setString(String(coord.longitude), forKey: lonKey)
+                }
+                // 若地址被清空，清理坐标，防止脏数据
+                let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty {
+                    SecureStorage.shared.remove(forKey: latKey)
+                    SecureStorage.shared.remove(forKey: lonKey)
                 }
             }
         }
