@@ -7,6 +7,7 @@ struct CompassView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var geocodingService = GeocodingService.shared
     @ObservedObject private var localizationManager = LocalizationManager.shared
+    @Environment(\.scenePhase) private var scenePhase
     
     @State private var selectedDestination = 0
     @State private var addresses: [String] = []
@@ -18,6 +19,9 @@ struct CompassView: View {
     @State private var spinAngle: Double = 0 // 一次性旋转动画角度（0→360）
     @State private var isSpinning: Bool = false // 防止叠加旋转
     @State private var showSetupPrompt: Bool = false // 未设置地址时的提示弹窗
+    // 动态渲染参数（前台优先体验，120Hz更顺滑）
+    @State private var angleEpsilon: Double = 0.12 // 最小角度阈值，前台/120Hz 会下调
+    @State private var arrowAnimDuration: Double = 0.10 // 动画时长，前台/120Hz 会下调
     
     
     private var destinationLabels: [String] {
@@ -326,6 +330,7 @@ struct CompassView: View {
                 // 确保无论授权是否在此前已授予，都立即开启方向更新
                 locationManager.startHeadingUpdates()
             }
+            applyActiveDisplayProfile()
         }
         .onChange(of: showSettings) { newValue in
             // 进入设置页时暂停磁力计，降低CPU与能耗；返回时恢复并刷新
@@ -335,6 +340,17 @@ struct CompassView: View {
                 loadAddresses()
                 updateDirection()
                 locationManager.startHeadingUpdates()
+                applyActiveDisplayProfile()
+            }
+        }
+        .onChange(of: scenePhase) { phase in
+            switch phase {
+            case .active:
+                applyActiveDisplayProfile()
+            case .inactive, .background:
+                applyPassiveDisplayProfile()
+            @unknown default:
+                break
             }
         }
         // 实时位置变化时，刷新距离与方向（使用发布者，避免 Equatable 限制）
@@ -492,18 +508,36 @@ struct CompassView: View {
         let target = angle - locationManager.currentHeading
         // 与当前显示角度的最短差值
         let diff = wrapDelta(target - arrowRotation)
-        // 对极小角度变化不做动画更新，减少频繁重绘与能耗
-        if abs(diff) < 0.2 { return }
+        // 对极小角度变化不做动画更新（阈值随前/后台动态调整）
+        if abs(diff) < angleEpsilon { return }
         // 采用最短路径更新显示角度（避免跨 0° 时出现整圈旋转）
         if isSpinning {
             // 旋转一圈动画进行中：为了避免动画冲突，立即更新，无额外动画
             arrowRotation += diff
         } else {
             // 非点击旋转场景：线性短动画平滑过渡
-            withAnimation(.linear(duration: 0.12)) {
+            withAnimation(.linear(duration: arrowAnimDuration)) {
                 arrowRotation += diff
             }
         }
+    }
+
+    // MARK: - Display profiles
+    private func applyActiveDisplayProfile() {
+        // 前台：优先体验。检测 120Hz 设备，降低阈值与动画时长，并提升方向更新频率
+        let fps = UIScreen.main.maximumFramesPerSecond
+        let isProMotion = fps >= 120
+        angleEpsilon = isProMotion ? 0.06 : 0.10
+        arrowAnimDuration = isProMotion ? 0.07 : 0.10
+        // 更细的方向步进（0.5°）提升顺滑度
+        locationManager.setHeadingFilter(0.5)
+    }
+
+    private func applyPassiveDisplayProfile() {
+        // 后台/非活动：倾向省电
+        angleEpsilon = 0.18
+        arrowAnimDuration = 0.12
+        locationManager.setHeadingFilter(1.5)
     }
 
     // MARK: - Slot helpers and UI
@@ -725,6 +759,13 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     func stopHeadingUpdates() {
         locationManager.stopUpdatingHeading()
+    }
+
+    // 允许外部根据场景调整角度步进
+    func setHeadingFilter(_ degrees: CLLocationDegrees) {
+        if CLLocationManager.headingAvailable() {
+            locationManager.headingFilter = degrees
+        }
     }
 
     deinit {
