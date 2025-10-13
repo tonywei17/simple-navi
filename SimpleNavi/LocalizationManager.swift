@@ -91,6 +91,9 @@ enum LocalizedStringKey: String, CaseIterable {
     case address1Home = "address1_home"
     case address2Work = "address2_work"
     case address3Other = "address3_other"
+    case labelEditorTitle = "label_editor_title"
+    case labelEditorMessage = "label_editor_message"
+    case labelEditorPlaceholder = "label_editor_placeholder"
     case enterHomeAddress = "enter_home_address"
     case enterWorkAddress = "enter_work_address"
     case enterOtherAddress = "enter_other_address"
@@ -175,6 +178,9 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .address1Home: "Address 1 (Home)",
         .address2Work: "Address 2 (Work)",
         .address3Other: "Address 3 (Other)",
+        .labelEditorTitle: "Custom Label",
+        .labelEditorMessage: "Rename this address for easier identification.",
+        .labelEditorPlaceholder: "Enter a label",
         .enterHomeAddress: "Enter home address",
         .enterWorkAddress: "Enter work address",
         .enterOtherAddress: "Enter other important address",
@@ -251,6 +257,9 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .address1Home: "地址 1 (家)",
         .address2Work: "地址 2 (工作)",
         .address3Other: "地址 3 (其他)",
+        .labelEditorTitle: "自定义标签",
+        .labelEditorMessage: "为该地址设置一个更容易识别的标签。",
+        .labelEditorPlaceholder: "输入标签",
         .enterHomeAddress: "请输入家庭地址",
         .enterWorkAddress: "请输入工作地址",
         .enterOtherAddress: "请输入其他重要地址",
@@ -327,6 +336,9 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .address1Home: "住所 1 (自宅)",
         .address2Work: "住所 2 (職場)",
         .address3Other: "住所 3 (その他)",
+        .labelEditorTitle: "カスタムラベル",
+        .labelEditorMessage: "この住所にわかりやすいラベルを設定しましょう。",
+        .labelEditorPlaceholder: "ラベルを入力",
         .enterHomeAddress: "自宅住所を入力してください",
         .enterWorkAddress: "職場住所を入力してください",
         .enterOtherAddress: "その他の重要な住所を入力してください",

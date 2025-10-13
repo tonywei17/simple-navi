@@ -1,6 +1,13 @@
 import SwiftUI
 import CoreLocation
 import MapKit
+import UIKit
+
+func dismissKeyboard() {
+    #if canImport(UIKit)
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    #endif
+}
 
 // MARK: - 一次性定位提供者（用于为搜索建议设定当前区域）
 final class OneShotLocationProvider: NSObject, ObservableObject, CLLocationManagerDelegate {
@@ -79,7 +86,11 @@ struct SetupView: View {
     @State private var address1 = ""
     @State private var address2 = ""
     @State private var address3 = ""
+    @State private var label1 = AddressLabelStore.load(slot: 1)
+    @State private var label2 = AddressLabelStore.load(slot: 2)
+    @State private var label3 = AddressLabelStore.load(slot: 3)
     @State private var isLoading = false
+    @State private var skipKeyboardDismissTap = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -166,31 +177,37 @@ struct SetupView: View {
                             ModernAddressInputField(
                                 icon: "house.fill",
                                 iconColor: .blue,
-                                label: String(localized: .address1Home),
+                                label: Binding(get: { label1 }, set: { label1 = $0 }),
+                                labelPlaceholder: AddressLabelStore.defaultLabel(for: 1),
                                 address: $address1,
                                 placeholder: String(localized: .enterHomeAddress),
                                 isRequired: true,
-                                slot: 1
+                                slot: 1,
+                                onTapInside: { skipKeyboardDismissTap = true }
                             )
                             
                             ModernAddressInputField(
                                 icon: "building.2.fill",
                                 iconColor: .orange,
-                                label: String(localized: .address2Work),
+                                label: Binding(get: { label2 }, set: { label2 = $0 }),
+                                labelPlaceholder: AddressLabelStore.defaultLabel(for: 2),
                                 address: $address2,
                                 placeholder: String(localized: .enterWorkAddress),
                                 isRequired: false,
-                                slot: 2
+                                slot: 2,
+                                onTapInside: { skipKeyboardDismissTap = true }
                             )
                             
                             ModernAddressInputField(
                                 icon: "heart.fill",
                                 iconColor: .pink,
-                                label: String(localized: .address3Other),
+                                label: Binding(get: { label3 }, set: { label3 = $0 }),
+                                labelPlaceholder: AddressLabelStore.defaultLabel(for: 3),
                                 address: $address3,
                                 placeholder: String(localized: .enterOtherAddress),
                                 isRequired: false,
-                                slot: 3
+                                slot: 3,
+                                onTapInside: { skipKeyboardDismissTap = true }
                             )
                         }
                         .padding(.horizontal, 20)
@@ -247,6 +264,13 @@ struct SetupView: View {
                             .frame(height: 30)
                     }
                 }
+                .onTapGesture {
+                    if skipKeyboardDismissTap {
+                        skipKeyboardDismissTap = false
+                        return
+                    }
+                    dismissKeyboard()
+                }
                 .fullScreenCover(isPresented: $showLanguageSheet) {
                     LanguageSelectionView(isPresented: $showLanguageSheet)
                         .onAppear { print("[LanguageFullScreen-SetupView] presented") }
@@ -258,6 +282,14 @@ struct SetupView: View {
             address1 = SecureStorage.shared.getString(forKey: UDKeys.address1) ?? ""
             address2 = SecureStorage.shared.getString(forKey: UDKeys.address2) ?? ""
             address3 = SecureStorage.shared.getString(forKey: UDKeys.address3) ?? ""
+            label1 = AddressLabelStore.load(slot: 1)
+            label2 = AddressLabelStore.load(slot: 2)
+            label3 = AddressLabelStore.load(slot: 3)
+        }
+        .onChange(of: localizationManager.currentLanguage) { _ in
+            label1 = AddressLabelStore.load(slot: 1)
+            label2 = AddressLabelStore.load(slot: 2)
+            label3 = AddressLabelStore.load(slot: 3)
         }
     }
     
@@ -267,6 +299,9 @@ struct SetupView: View {
         SecureStorage.shared.setString(address1.trimmingCharacters(in: .whitespacesAndNewlines), forKey: UDKeys.address1)
         SecureStorage.shared.setString(address2.trimmingCharacters(in: .whitespacesAndNewlines), forKey: UDKeys.address2)
         SecureStorage.shared.setString(address3.trimmingCharacters(in: .whitespacesAndNewlines), forKey: UDKeys.address3)
+        AddressLabelStore.save(label1, slot: 1)
+        AddressLabelStore.save(label2, slot: 2)
+        AddressLabelStore.save(label3, slot: 3)
         UserDefaults.standard.set(!address1.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, forKey: UDKeys.hasSetupAddresses)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -281,11 +316,13 @@ struct SetupView: View {
 struct ModernAddressInputField: View {
     let icon: String
     let iconColor: Color
-    let label: String
+    var label: Binding<String>? = nil
+    let labelPlaceholder: String
     @Binding var address: String
     let placeholder: String
     let isRequired: Bool
     let slot: Int
+    var onTapInside: (() -> Void)? = nil
     
     @State private var isFocused = false
     
@@ -310,9 +347,25 @@ struct ModernAddressInputField: View {
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(iconColor)
-                Text(label)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
+                if let label = label {
+                    TextField(labelPlaceholder, text: label, onEditingChanged: { editing in
+                        if editing {
+                            onTapInside?()
+                        }
+                    })
+                        .font(.system(size: 18, weight: .semibold))
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                        .foregroundColor(.primary)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                        .onTapGesture {
+                            onTapInside?()
+                        }
+                } else {
+                    Text(labelPlaceholder)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
                 if isRequired {
                     Text("*")
                         .font(.system(size: 18, weight: .bold))
@@ -352,6 +405,7 @@ struct ModernAddressInputField: View {
                     // 清空按钮
                     if !address.isEmpty {
                         Button(action: {
+                            onTapInside?()
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 address = ""
                             }
@@ -367,6 +421,7 @@ struct ModernAddressInputField: View {
 
                     // 地图确认按钮（始终显示，便于直接从地图选择）
                     Button(action: {
+                        onTapInside?()
                         showMapConfirm = true
                     }) {
                         Image(systemName: "map.fill")
@@ -399,6 +454,7 @@ struct ModernAddressInputField: View {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         isFocused = true
                     }
+                    onTapInside?()
                 }
                 .scaleEffect(isFocused ? 1.02 : 1.0)
                 .animation(.easeInOut(duration: 0.2), value: isFocused)

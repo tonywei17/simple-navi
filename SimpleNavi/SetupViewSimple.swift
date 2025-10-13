@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import UIKit
 
 struct SetupViewSimple: View {
     @Binding var isFirstLaunch: Bool
@@ -10,6 +11,10 @@ struct SetupViewSimple: View {
     @State private var address2 = ""
     @State private var address3 = ""
     @State private var showLanguageSelection = false
+    @State private var skipKeyboardDismissTap = false
+    @State private var label1 = AddressLabelStore.load(slot: 1)
+    @State private var label2 = AddressLabelStore.load(slot: 2)
+    @State private var label3 = AddressLabelStore.load(slot: 3)
     
     @ObservedObject private var localizationManager = LocalizationManager.shared
     private let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
@@ -41,6 +46,15 @@ struct SetupViewSimple: View {
             let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
             SecureStorage.shared.setString(trimmed, forKey: UDKeys.address3)
         }
+        .onChange(of: label1) { newValue in
+            AddressLabelStore.save(newValue, slot: 1)
+        }
+        .onChange(of: label2) { newValue in
+            AddressLabelStore.save(newValue, slot: 2)
+        }
+        .onChange(of: label3) { newValue in
+            AddressLabelStore.save(newValue, slot: 3)
+        }
         .onAppear {
             // 初始加载加密地址并执行一次性迁移（如存在旧的明文 UserDefaults）
             let s1 = SecureStorage.shared.getString(forKey: UDKeys.address1)
@@ -67,6 +81,14 @@ struct SetupViewSimple: View {
             address1 = a1
             address2 = a2
             address3 = a3
+            label1 = AddressLabelStore.load(slot: 1)
+            label2 = AddressLabelStore.load(slot: 2)
+            label3 = AddressLabelStore.load(slot: 3)
+        }
+        .onChange(of: localizationManager.currentLanguage) { _ in
+            label1 = AddressLabelStore.load(slot: 1)
+            label2 = AddressLabelStore.load(slot: 2)
+            label3 = AddressLabelStore.load(slot: 3)
         }
     }
 
@@ -91,6 +113,13 @@ struct SetupViewSimple: View {
             ).ignoresSafeArea()
         )
         .navigationBarHidden(true)
+        .onTapGesture {
+            if skipKeyboardDismissTap {
+                skipKeyboardDismissTap = false
+                return
+            }
+            dismissKeyboard()
+        }
     }
     
     private var headerSection: some View {
@@ -147,31 +176,37 @@ struct SetupViewSimple: View {
             ModernAddressInputField(
                 icon: "house.fill",
                 iconColor: .blue,
-                label: String(localized: .address1Home),
+                label: Binding(get: { label1 }, set: { label1 = $0 }),
+                labelPlaceholder: AddressLabelStore.defaultLabel(for: 1),
                 address: $address1,
                 placeholder: String(localized: .enterHomeAddress),
                 isRequired: true,
-                slot: 1
+                slot: 1,
+                onTapInside: { skipKeyboardDismissTap = true }
             )
             
             ModernAddressInputField(
                 icon: "building.2.fill",
                 iconColor: .orange,
-                label: String(localized: .address2Work),
+                label: Binding(get: { label2 }, set: { label2 = $0 }),
+                labelPlaceholder: AddressLabelStore.defaultLabel(for: 2),
                 address: $address2,
                 placeholder: String(localized: .enterWorkAddress),
                 isRequired: false,
-                slot: 2
+                slot: 2,
+                onTapInside: { skipKeyboardDismissTap = true }
             )
             
             ModernAddressInputField(
                 icon: "heart.fill",
                 iconColor: .pink,
-                label: String(localized: .address3Other),
+                label: Binding(get: { label3 }, set: { label3 = $0 }),
+                labelPlaceholder: AddressLabelStore.defaultLabel(for: 3),
                 address: $address3,
                 placeholder: String(localized: .enterOtherAddress),
                 isRequired: false,
-                slot: 3
+                slot: 3,
+                onTapInside: { skipKeyboardDismissTap = true }
             )
         }
     }

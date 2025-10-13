@@ -12,6 +12,11 @@ struct CompassView: View {
     @State private var selectedDestination = 0
     @State private var addresses: [String] = []
     @State private var destinationCoordinates: [CLLocationCoordinate2D] = []
+    @State private var slotLabels: [String] = [
+        AddressLabelStore.load(slot: 1),
+        AddressLabelStore.load(slot: 2),
+        AddressLabelStore.load(slot: 3)
+    ]
     @State private var angle: Double = 0
     @State private var distance: Double = 0
     @State private var showDonation = false
@@ -30,11 +35,7 @@ struct CompassView: View {
     
     
     private var destinationLabels: [String] {
-        [
-            String(localized: .home),
-            String(localized: .work),
-            String(localized: .other)
-        ]
+        [labelForSlot(0), labelForSlot(1), labelForSlot(2)]
     }
     
     var body: some View {
@@ -330,6 +331,7 @@ struct CompassView: View {
         }
         .onAppear {
             loadAddresses()
+            loadLabels()
             if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
                 startLocationUpdates()
                 // 确保无论授权是否在此前已授予，都立即开启方向更新
@@ -343,6 +345,7 @@ struct CompassView: View {
                 locationManager.stopHeadingUpdates()
             } else {
                 loadAddresses()
+                loadLabels()
                 updateDirection()
                 locationManager.startHeadingUpdates()
                 applyActiveDisplayProfile()
@@ -357,6 +360,9 @@ struct CompassView: View {
             @unknown default:
                 break
             }
+        }
+        .onChange(of: localizationManager.currentLanguage) { _ in
+            loadLabels()
         }
         // 实时位置变化时，刷新距离与方向（使用发布者，避免 Equatable 限制）
         .onReceive(locationManager.$currentLocation) { _ in
@@ -433,8 +439,20 @@ struct CompassView: View {
 
         addresses = loadedAddresses
         destinationCoordinates = loadedCoordinates
+        if selectedDestination >= addresses.count {
+            selectedDestination = max(0, addresses.count - 1)
+        }
+        updateDirection()
     }
-    
+
+    private func loadLabels() {
+        slotLabels = [
+            AddressLabelStore.load(slot: 1),
+            AddressLabelStore.load(slot: 2),
+            AddressLabelStore.load(slot: 3)
+        ]
+    }
+
     private func geocodeAndStoreAddress(_ address: String, index: Int, slot: Int) {
         geocodingService.geocodeAddress(address) { coordinate in
             guard let coordinate = coordinate else { return }
@@ -559,6 +577,15 @@ struct CompassView: View {
         default:
             return getAddress(forKey: UDKeys.address3) ?? ""
         }
+    }
+
+    private func labelForSlot(_ slot: Int) -> String {
+        let index = max(0, min(slot, 2))
+        let saved = slotLabels.indices.contains(index) ? slotLabels[index].trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        if saved.isEmpty {
+            return AddressLabelStore.defaultLabel(for: index + 1)
+        }
+        return saved
     }
 
     private func getAddress(forKey key: String) -> String? {
@@ -707,7 +734,7 @@ struct CompassView: View {
                                 .font(.system(size: 22, weight: .semibold))
                                 .opacity(isAvailable ? 1.0 : 0.5)
                         }
-                        Text(slot == 0 ? String(localized: .home) : slot == 1 ? String(localized: .work) : String(localized: .other))
+                        Text(labelForSlot(slot))
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(isAvailable ? Color(UIColor.label) : Color(UIColor.tertiaryLabel))
                             .frame(width: 60)
