@@ -2,6 +2,40 @@ import SwiftUI
 import MapKit
 import CoreLocation
 
+// MARK: - State Models
+struct MapState {
+    var position: MapCameraPosition = .automatic
+    var selectedCoordinate: CLLocationCoordinate2D?
+    var originalCoordinate: CLLocationCoordinate2D?
+    var isLoading = false
+}
+
+struct AddressState {
+    var centerAddress: String = ""
+    var editableAddress: String = ""
+    var userEdited: Bool = false
+    var programmaticUpdate: Bool = false
+}
+
+// MARK: - Error Types
+enum AddressConfirmError: LocalizedError {
+    case geocodingFailed
+    case reverseGeocodingFailed
+    case networkError
+    case cancelled
+    
+    var errorDescription: String? {
+        switch self {
+        case .geocodingFailed, .reverseGeocodingFailed:
+            return String(localized: .reverseGeocodeFailed)
+        case .networkError:
+            return "网络连接失败，请检查网络设置"
+        case .cancelled:
+            return nil
+        }
+    }
+}
+
 struct AddressMapConfirmView: View {
     let address: String
     let initialCoordinate: CLLocationCoordinate2D?
@@ -10,16 +44,13 @@ struct AddressMapConfirmView: View {
     @Binding var confirmedCoordinate: CLLocationCoordinate2D?
     
     private let addressManager = JapaneseAddressManager.shared
-    @State private var position: MapCameraPosition = .automatic
-    @State private var selectedCoordinate: CLLocationCoordinate2D?
-    @State private var originalCoordinate: CLLocationCoordinate2D?
-    @State private var isLoading = false
+    
+    // MARK: - State
+    @State private var mapState = MapState()
+    @State private var addressState = AddressState()
     @State private var errorMessage: String?
-    @State private var centerAddress: String = ""
-    @State private var geocodeDebounceWorkItem: DispatchWorkItem?
-    @State private var editableAddress: String = ""
-    @State private var userEditedAddress: Bool = false
-    @State private var programmaticUpdate: Bool = false
+    @State private var geocodingTask: Task<Void, Never>?
+    @State private var initialGeocodingTask: Task<Void, Never>?
     @StateObject private var locationProvider = OneShotLocationProvider()
     @State private var didCenterToUserLocation: Bool = false
     
@@ -54,14 +85,16 @@ struct AddressMapConfirmView: View {
                             
                             // 核心修复：强制限制 TextField 宽度并允许垂直增长
                             // 不使用任何 UIScreen 或 GeometryReader，纯靠布局约束
-                            TextField("", text: $editableAddress, axis: .vertical)
+                            TextField("", text: $addressState.editableAddress, axis: .vertical)
                                 .font(.system(size: 17, weight: .semibold))
                                 .lineLimit(1...5)
                                 .padding(12)
                                 .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
-                                .fixedSize(horizontal: false, vertical: true) // 关键：禁止水平增长，允许垂直增长
-                                .onChange(of: editableAddress) { _, _ in
-                                    if !programmaticUpdate { userEditedAddress = true }
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityLabel(String(localized: .targetAddress))
+                                .accessibilityHint("编辑目标地址")
+                                .onChange(of: addressState.editableAddress) { _, _ in
+                                    if !addressState.programmaticUpdate { addressState.userEdited = true }
                                 }
                         }
                     }
@@ -72,11 +105,12 @@ struct AddressMapConfirmView: View {
                     
                     // 地图区域
                     ZStack {
-                        Map(position: $position, interactionModes: .all) {
+                        Map(position: $mapState.position, interactionModes: .all) {
                             // 移除 Annotation，标记将固定在屏幕中心
                         }
-                        .frame(minHeight: 200, maxHeight: 300) // 动态高度范围
-                        .aspectRatio(1.2, contentMode: .fit) // 保持比例，避免过长
+                        .mapStyle(.standard(elevation: .flat))
+                        .frame(minHeight: 200, maxHeight: 300)
+                        .aspectRatio(1.2, contentMode: .fit)
                         .cornerRadius(24)
                         .onMapCameraChange { context in
                             mapCenterChanged(to: context.camera.centerCoordinate)
@@ -93,7 +127,7 @@ struct AddressMapConfirmView: View {
                                 .foregroundColor(.white)
                         }
                         
-                        if isLoading {
+                        if mapState.isLoading {
                             RoundedRectangle(cornerRadius: 24).fill(Color.black.opacity(0.2))
                                 .overlay(ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)).scaleEffect(1.2))
                         }
@@ -125,10 +159,12 @@ struct AddressMapConfirmView: View {
                         .frame(height: 56)
                         .background(
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(selectedCoordinate != nil ? AnyShapeStyle(LinearGradient(colors: [.green, .blue], startPoint: .leading, endPoint: .trailing)) : AnyShapeStyle(Color.gray.opacity(0.6)))
+                                .fill(mapState.selectedCoordinate != nil ? AnyShapeStyle(LinearGradient(colors: [.green, .blue], startPoint: .leading, endPoint: .trailing)) : AnyShapeStyle(Color.gray.opacity(0.6)))
                         )
                     }
-                    .disabled(selectedCoordinate == nil)
+                    .disabled(mapState.selectedCoordinate == nil)
+                    .accessibilityLabel(String(localized: .confirmAddress))
+                    .accessibilityHint("确认选择的地址和位置")
                     
                     Button(action: { isPresented = false }) {
                         Text(localized: .cancel)
@@ -149,20 +185,27 @@ struct AddressMapConfirmView: View {
             setEditableAddressProgrammatically(address)
             locationProvider.start()
             if let initCoord = initialCoordinate {
-                position = .camera(MapCamera(centerCoordinate: initCoord, distance: 1000))
-                selectedCoordinate = initCoord
-                originalCoordinate = initCoord
-                Task {
+                mapState.position = .camera(MapCamera(centerCoordinate: initCoord, distance: 1000))
+                mapState.selectedCoordinate = initCoord
+                mapState.originalCoordinate = initCoord
+                initialGeocodingTask = Task {
                     do {
                         let addr = try await addressManager.reverseGeocodeCoordinate(initCoord)
+                        
+                        if Task.isCancelled { return }
+                        
                         await MainActor.run {
-                            centerAddress = addr
+                            addressState.centerAddress = addr
                             setEditableAddressProgrammatically(addr)
                         }
+                    } catch is CancellationError {
+                        return
                     } catch {
+                        if Task.isCancelled { return }
+                        
                         await MainActor.run {
                             let fallback = formattedCoordinateString(initCoord)
-                            centerAddress = fallback
+                            addressState.centerAddress = fallback
                             setEditableAddressProgrammatically(fallback)
                         }
                     }
@@ -174,24 +217,34 @@ struct AddressMapConfirmView: View {
         .onChange(of: locationProvider.coordinate?.latitude) { _, _ in
             guard let coord = locationProvider.coordinate, address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !didCenterToUserLocation else { return }
             didCenterToUserLocation = true
-            position = .camera(MapCamera(centerCoordinate: coord, distance: 1000))
-            selectedCoordinate = coord
-            originalCoordinate = coord
-            Task {
+            mapState.position = .camera(MapCamera(centerCoordinate: coord, distance: 1000))
+            mapState.selectedCoordinate = coord
+            mapState.originalCoordinate = coord
+            
+            initialGeocodingTask?.cancel()
+            
+            initialGeocodingTask = Task {
                 do {
                     let addr = try await addressManager.reverseGeocodeCoordinate(coord)
+                    
+                    if Task.isCancelled { return }
+                    
                     await MainActor.run {
-                        centerAddress = addr
-                        if editableAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        addressState.centerAddress = addr
+                        if addressState.editableAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             setEditableAddressProgrammatically(addr)
                         }
                         errorMessage = nil
                     }
+                } catch is CancellationError {
+                    return
                 } catch {
+                    if Task.isCancelled { return }
+                    
                     await MainActor.run {
                         let fallback = formattedCoordinateString(coord)
-                        centerAddress = fallback
-                        if editableAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        addressState.centerAddress = fallback
+                        if addressState.editableAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             setEditableAddressProgrammatically(fallback)
                         }
                         errorMessage = String(localized: .reverseGeocodeFailed)
@@ -199,30 +252,49 @@ struct AddressMapConfirmView: View {
                 }
             }
         }
+        .onDisappear {
+            // 清理所有异步任务，防止内存泄漏
+            geocodingTask?.cancel()
+            initialGeocodingTask?.cancel()
+        }
     }
     
     private func geocodeInitialAddress() {
-        isLoading = true
+        mapState.isLoading = true
         errorMessage = nil
         let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
-            isLoading = false
+            mapState.isLoading = false
             return
         }
         
-        Task {
+        initialGeocodingTask = Task {
             do {
                 let coordinate = try await addressManager.geocodeAddress(trimmed)
+                
+                if Task.isCancelled {
+                    await MainActor.run { mapState.isLoading = false }
+                    return
+                }
+                
                 await MainActor.run {
-                    isLoading = false
-                    selectedCoordinate = coordinate
-                    originalCoordinate = coordinate
-                    position = .camera(MapCamera(centerCoordinate: coordinate, distance: 1000))
+                    mapState.isLoading = false
+                    mapState.selectedCoordinate = coordinate
+                    mapState.originalCoordinate = coordinate
+                    mapState.position = .camera(MapCamera(centerCoordinate: coordinate, distance: 1000))
                     errorMessage = nil
                 }
+            } catch is CancellationError {
+                await MainActor.run { mapState.isLoading = false }
+                return
             } catch {
+                if Task.isCancelled {
+                    await MainActor.run { mapState.isLoading = false }
+                    return
+                }
+                
                 await MainActor.run {
-                    isLoading = false
+                    mapState.isLoading = false
                     errorMessage = String(localized: .reverseGeocodeFailed)
                 }
             }
@@ -230,43 +302,53 @@ struct AddressMapConfirmView: View {
     }
     
     private func mapCenterChanged(to coordinate: CLLocationCoordinate2D) {
-        selectedCoordinate = coordinate
-        geocodeDebounceWorkItem?.cancel()
-        let work = DispatchWorkItem {
-            Task {
-                do {
-                    let addr = try await addressManager.reverseGeocodeCoordinate(coordinate)
-                    await MainActor.run {
-                        centerAddress = addr
-                        errorMessage = nil
-                        setEditableAddressProgrammatically(addr)
-                    }
-                } catch {
-                    await MainActor.run {
-                        let fallback = formattedCoordinateString(coordinate)
-                        centerAddress = fallback
-                        setEditableAddressProgrammatically(fallback)
-                    }
+        mapState.selectedCoordinate = coordinate
+        
+        geocodingTask?.cancel()
+        
+        geocodingTask = Task {
+            do {
+                try await Task.sleep(for: .milliseconds(600))
+                
+                if Task.isCancelled { return }
+                
+                let addr = try await addressManager.reverseGeocodeCoordinate(coordinate)
+                
+                if Task.isCancelled { return }
+                
+                await MainActor.run {
+                    addressState.centerAddress = addr
+                    errorMessage = nil
+                    setEditableAddressProgrammatically(addr)
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                if Task.isCancelled { return }
+                
+                await MainActor.run {
+                    let fallback = formattedCoordinateString(coordinate)
+                    addressState.centerAddress = fallback
+                    setEditableAddressProgrammatically(fallback)
                 }
             }
         }
-        geocodeDebounceWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: work)
     }
     
     private func confirmLocation() {
-        guard let coordinate = selectedCoordinate else { return }
+        guard let coordinate = mapState.selectedCoordinate else { return }
         confirmedCoordinate = coordinate
-        let centerTrimmed = centerAddress.trimmingCharacters(in: .whitespacesAndNewlines)
-        confirmedAddress = (!userEditedAddress && !centerTrimmed.isEmpty) ? centerTrimmed : (editableAddress.isEmpty ? address : editableAddress)
+        let centerTrimmed = addressState.centerAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        confirmedAddress = (!addressState.userEdited && !centerTrimmed.isEmpty) ? centerTrimmed : (addressState.editableAddress.isEmpty ? address : addressState.editableAddress)
         isPresented = false
     }
 
     private func setEditableAddressProgrammatically(_ value: String) {
-        programmaticUpdate = true
-        editableAddress = value
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.programmaticUpdate = false
+        addressState.programmaticUpdate = true
+        addressState.editableAddress = value
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            addressState.programmaticUpdate = false
         }
     }
 

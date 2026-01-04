@@ -1,5 +1,54 @@
 # 开发日志 / Changelog
 
+## [2025-01-05] - 代码质量优化和性能提升
+
+### 修复 (Fixed)
+- **内存泄漏问题 (高优先级)** 🔴
+  - 修复所有 `Task` 没有正确取消导致的内存泄漏
+  - 添加 `Task` 引用管理：`geocodingTask` 和 `initialGeocodingTask`
+  - 在所有 Task 中添加 `Task.isCancelled` 检查和 `CancellationError` 处理
+  - 添加 `.onDisappear` 生命周期方法清理所有异步任务
+  - 替换 `DispatchWorkItem` 为 `Task.sleep`，使用 Swift 并发的内置防抖机制
+  - 优化 `setEditableAddressProgrammatically` 使用 `Task` 替代 `DispatchQueue`
+
+### 优化 (Optimized)
+- **状态管理优化 (中优先级)** 🟡
+  - 引入 `MapState` 和 `AddressState` 结构体组织相关状态
+  - 减少分散的 `@State` 变量，提高代码可维护性
+  - 状态变量分组更清晰：地图状态、地址状态、任务管理
+
+- **错误处理改进 (中优先级)** 🟡
+  - 创建 `AddressConfirmError` 枚举类型
+  - 实现 `LocalizedError` 协议提供本地化错误描述
+  - 区分不同类型的错误：地理编码失败、网络错误、取消等
+
+- **性能优化 (低优先级)** 🟢
+  - 添加 `.mapStyle(.standard(elevation: .flat))` 减少 3D 渲染开销
+  - 优化地图配置，提升渲染性能
+
+- **可访问性支持 (低优先级)** ♿️
+  - 为 `TextField` 添加 `.accessibilityLabel` 和 `.accessibilityHint`
+  - 为确认按钮添加可访问性标签和提示
+  - 提升视障用户的使用体验
+
+### 技术细节 (Technical Details)
+- **文件**: `AddressMapConfirmView.swift`
+- **关键修改**:
+  1. **内存管理**: 所有 Task 都有引用并在视图消失时取消
+  2. **状态结构化**: 使用 `MapState` 和 `AddressState` 组织状态
+  3. **错误类型化**: `AddressConfirmError` 枚举提供类型安全的错误处理
+  4. **性能优化**: `.mapStyle(.standard(elevation: .flat))` 减少渲染负担
+  5. **可访问性**: 添加 VoiceOver 支持
+
+### 代码质量提升 (Code Quality)
+- ✅ 遵循 Swift 并发最佳实践
+- ✅ 符合 Apple 官方内存管理指南
+- ✅ 提高代码可测试性和可维护性
+- ✅ 改善用户体验和可访问性
+- ✅ 减少潜在的崩溃和内存问题
+
+---
+
 ## [2025-01-04] - 地址确认页面布局优化
 
 ### 修复 (Fixed)
