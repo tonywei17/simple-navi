@@ -134,7 +134,27 @@ struct DonationView: View {
     private var mainContent: some View {
         GeometryReader { geometry in
             ZStack {
-                backgroundGradient
+                // 更加柔和的背景
+                ZStack {
+                    Color(uiColor: .systemBackground)
+                    
+                    LinearGradient(
+                        colors: [
+                            Color.orange.opacity(0.15),
+                            Color.red.opacity(0.08),
+                            Color.clear
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    
+                    Circle()
+                        .fill(Color.pink.opacity(0.05))
+                        .frame(width: 400, height: 400)
+                        .blur(radius: 60)
+                        .offset(x: 150, y: -200)
+                }
+                .ignoresSafeArea()
                 
                 ScrollView {
                     VStack(spacing: 24) {
@@ -165,20 +185,28 @@ struct DonationView: View {
     }
     
     private var headerSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 24) {
             heartIcon
             
-            Text(String(localized: .supportDeveloper))
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(.primary)
-            
-            Text(String(localized: .donateMessage))
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(nil)
-                .padding(.horizontal, 20)
+            VStack(spacing: 12) {
+                Text(String(localized: .supportDeveloper))
+                    .font(.system(size: 40, weight: .black, design: .rounded))
+                
+                Text(String(localized: .donateMessage))
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
         }
+        .padding(.vertical, 32)
+        .frame(maxWidth: .infinity)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(.white.opacity(0.5), lineWidth: 1)
+        )
+        .padding(.horizontal, 20)
         .padding(.top, 20)
     }
     
@@ -218,17 +246,17 @@ struct DonationView: View {
             isPresented = false
         }) {
             Text(String(localized: .cancel))
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.gray)
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundColor(.primary.opacity(0.6))
                 .frame(maxWidth: .infinity)
-                .frame(height: 48)
+                .frame(height: 64)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(.systemGray6))
+                    Capsule()
+                        .fill(Color.primary.opacity(0.05))
                 )
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 30)
+        .padding(.horizontal, 24)
+        .padding(.bottom, 24)
     }
     
     private var loadingOverlay: some View {
@@ -273,30 +301,32 @@ struct DonationView: View {
                 }
                 
                 // 文本信息
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 8) {
                     let ui = uiForProduct(product.id)
                     Text(String(localized: ui.title))
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
                     Text(String(localized: ui.desc))
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 
                 // 价格
                 Text(product.displayPrice)
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 24, weight: .black))
                     .foregroundColor(.primary)
             }
             .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 12, x: 0, y: 6)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(.white.opacity(0.5), lineWidth: 1)
             )
+            .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
             .scaleEffect(isProcessingPurchase ? 0.98 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: isProcessingPurchase)
         }

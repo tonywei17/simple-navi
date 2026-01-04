@@ -64,32 +64,33 @@ struct AddressMapConfirmView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 1. 主滚动区域
+            // 1. 主区域
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 20) {
+                VStack(spacing: 24) {
                     // 地址信息卡片
                     VStack(alignment: .leading, spacing: 16) {
                         HStack(spacing: 12) {
                             Image(systemName: "mappin.circle.fill")
-                                .font(.system(size: 24))
+                                .font(.system(size: 28))
                                 .foregroundColor(.red)
                             Text(localized: .addressConfirmation)
-                                .font(.system(size: 20, weight: .bold))
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
                             Spacer()
                         }
                         
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 12) {
                             Text(localized: .targetAddress)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.secondary)
                             
-                            // 核心修复：强制限制 TextField 宽度并允许垂直增长
-                            // 不使用任何 UIScreen 或 GeometryReader，纯靠布局约束
                             TextField("", text: $addressState.editableAddress, axis: .vertical)
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
                                 .lineLimit(1...5)
-                                .padding(12)
-                                .background(RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground)))
+                                .padding(16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color(uiColor: .secondarySystemBackground).opacity(0.5))
+                                )
                                 .fixedSize(horizontal: false, vertical: true)
                                 .accessibilityLabel(String(localized: .targetAddress))
                                 .accessibilityHint("编辑目标地址")
@@ -98,23 +99,29 @@ struct AddressMapConfirmView: View {
                                 }
                         }
                     }
-                    .padding(20)
-                    .background(RoundedRectangle(cornerRadius: 24).fill(Color(.systemBackground)))
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
+                    .padding(24)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 32, style: .continuous)
+                            .stroke(.white.opacity(0.5), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
                     
                     // 地图区域
                     ZStack {
                         Map(position: $mapState.position, interactionModes: .all) {
-                            // 移除 Annotation，标记将固定在屏幕中心
                         }
                         .mapStyle(.standard(elevation: .flat))
-                        .frame(minHeight: 200, maxHeight: 300)
-                        .aspectRatio(1.2, contentMode: .fit)
-                        .cornerRadius(24)
-                        .onMapCameraChange { context in
-                            mapCenterChanged(to: context.camera.centerCoordinate)
-                        }
+                        .frame(minHeight: 250, maxHeight: 350)
+                        .aspectRatio(1.1, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                                .stroke(.white.opacity(0.5), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.05), radius: 15, x: 0, y: 10)
 
                         // 固定在屏幕中心的标记
                         ZStack {
@@ -144,41 +151,66 @@ struct AddressMapConfirmView: View {
                 }
                 .padding(.bottom, 20)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(
+                ZStack {
+                    Color(uiColor: .systemGroupedBackground)
+                    LinearGradient(
+                        colors: [Color.blue.opacity(0.05), Color.clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+                .ignoresSafeArea()
+            )
             .safeAreaInset(edge: .bottom) {
                 // 2. 固定底栏
-                VStack(spacing: 12) {
+                VStack(spacing: 16) {
                     Button(action: confirmLocation) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                            Text(localized: .confirmAddress)
+                        HStack(spacing: 10) {
+                            if mapState.isLoading {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            } else {
+                                Image(systemName: "checkmark.circle.fill")
+                                Text(localized: .confirmAddress)
+                            }
                         }
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 56)
+                        .frame(height: 72)
                         .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(mapState.selectedCoordinate != nil ? AnyShapeStyle(LinearGradient(colors: [.green, .blue], startPoint: .leading, endPoint: .trailing)) : AnyShapeStyle(Color.gray.opacity(0.6)))
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .fill(mapState.selectedCoordinate != nil ? AnyShapeStyle(LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing)) : AnyShapeStyle(Color.gray.opacity(0.3)))
+                                .shadow(color: mapState.selectedCoordinate != nil ? .blue.opacity(0.2) : .clear, radius: 10, x: 0, y: 5)
                         )
                     }
-                    .disabled(mapState.selectedCoordinate == nil)
+                    .disabled(mapState.selectedCoordinate == nil || mapState.isLoading)
                     .accessibilityLabel(String(localized: .confirmAddress))
                     .accessibilityHint("确认选择的地址和位置")
                     
                     Button(action: { isPresented = false }) {
                         Text(localized: .cancel)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.blue)
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary.opacity(0.7))
                             .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(RoundedRectangle(cornerRadius: 16).fill(Color.blue.opacity(0.08)))
+                            .frame(height: 64)
+                            .background(
+                                Capsule()
+                                    .fill(Color.primary.opacity(0.05))
+                            )
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 12) 
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 8) 
                 .background(.ultraThinMaterial)
+                .overlay(
+                    VStack {
+                        Divider().opacity(0.5)
+                        Spacer()
+                    }
+                )
             }
         }
         .onAppear {

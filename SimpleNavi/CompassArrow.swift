@@ -35,21 +35,33 @@ struct CompassArrow: View {
                 ZStack {
                     Image(systemName: "location.fill")
                         .font(.system(size: 70, weight: .bold))
-                        .foregroundColor(.black.opacity(0.12))
-                        .offset(x: 2, y: 2)
+                        .foregroundColor(.black.opacity(0.08))
+                        .offset(x: 3, y: 3)
+                        .blur(radius: 2)
                         .rotationEffect(.degrees(rotation - 45))
                     
                     Image(systemName: "location.fill")
                         .font(.system(size: 70, weight: .bold))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [Color(red: 0.15, green: 0.6, blue: 1.0), Color.blue],
+                                colors: [
+                                    Color(red: 0.15, green: 0.6, blue: 1.0),
+                                    Color.blue,
+                                    Color.purple.opacity(0.8)
+                                ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
                         .rotationEffect(.degrees(rotation - 45))
-                        .shadow(color: Color.blue.opacity(0.35), radius: 8, x: 0, y: 2)
+                        .overlay(
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 70, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.15))
+                                .rotationEffect(.degrees(rotation - 45))
+                                .blendMode(.overlay)
+                        )
+                        .shadow(color: Color.blue.opacity(0.3), radius: 10, x: 0, y: 4)
                 }
             }
         }
