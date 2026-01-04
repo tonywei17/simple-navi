@@ -334,7 +334,7 @@ struct SetupView: View {
                 }
             }
         }
-        .onChange(of: localizationManager.currentLanguage) { _ in
+        .onChange(of: localizationManager.currentLanguage) {
             Task {
                 let l1 = await AddressLabelStore.load(slot: 1)
                 let l2 = await AddressLabelStore.load(slot: 2)

@@ -24,7 +24,7 @@ struct StartNavigationIntent: AppIntent {
         // 在实际应用中，这里会通过 App Group 或通知告知主应用切换目的地
         // 由于是极简导航，我们可以直接保存新的选择到 SharedDataStore
         let label = await AddressLabelStore.load(slot: slot + 1)
-        let addr = await getAddress(for: slot)
+        _ = await getAddress(for: slot)
         
         // 这里的逻辑可以根据主应用的运行状态决定是打开 App 还是仅更新后台数据
         // 对于 2026 年的 Apple Intelligence，建议返回一个简单的结果

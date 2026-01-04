@@ -83,7 +83,7 @@ actor SharedDataStore {
                 let delay = max(0.25, self.minReloadInterval - since)
                 Task {
                     try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-                    await self.performReload()
+                    self.performReload()
                 }
             }
         }

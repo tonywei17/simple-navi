@@ -44,7 +44,7 @@ final class LiveActivityManager {
                 lastUpdated: Date()
             )
             do {
-                let newActivity = try Activity.request(attributes: attrs, contentState: state)
+                let newActivity = try Activity.request(attributes: attrs, content: .init(state: state, staleDate: nil))
                 anyActivity = newActivity
             } catch {
                 os_log("LiveActivity start error: %{public}@", String(describing: error))
@@ -79,7 +79,7 @@ final class LiveActivityManager {
                 lastUpdated: now
             )
             Task {
-                await activity.update(using: state)
+                await activity.update(.init(state: state, staleDate: nil))
             }
         }
         #endif
@@ -90,7 +90,7 @@ final class LiveActivityManager {
         #if canImport(ActivityKit)
         if #available(iOS 16.1, *), let activity = anyActivity as? Activity<SimpleNaviActivityAttributes> {
             Task {
-                await activity.end(dismissalPolicy: .immediate)
+                await activity.end(.init(state: activity.content.state, staleDate: nil), dismissalPolicy: .immediate)
             }
             self.anyActivity = nil
         }
