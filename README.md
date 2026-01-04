@@ -23,6 +23,14 @@
 - Swift 5.9+
 - SwiftUI
 
+## 项目文档
+
+为了方便开发和维护，详细的项目文档已归类至 `docs/` 目录：
+
+- 📘 [**产品与设计指南**](docs/Product_Design_Guide.md): 涵盖项目愿景、目标用户及老年人友好设计规范。
+- 🛠️ [**技术实现指南**](docs/Technical_Implementation_Guide.md): 详细记录架构设计、核心算法及性能优化细节。
+- 📝 [**开发日志**](docs/DEVELOPMENT_LOG.md): 记录项目的开发进度与关键决策。
+
 ## 项目结构
 
 ```

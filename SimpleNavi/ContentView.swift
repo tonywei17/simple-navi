@@ -16,7 +16,7 @@ struct ContentView: View {
         }
         // 从主页面进入设置：以全屏弹出，避免与顶部导航、滚动层交互冲突
         .fullScreenCover(isPresented: $showSettings) {
-            SetupViewSimple(isFirstLaunch: $isFirstLaunch, showSettings: $showSettings)
+            SetupView(isFirstLaunch: $isFirstLaunch, showSettings: $showSettings)
         }
         .onAppear {
             checkFirstLaunch()

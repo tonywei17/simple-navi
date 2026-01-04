@@ -1,43 +1,18 @@
 import SwiftUI
 import CoreLocation
-import UIKit
 
 struct CompassView: View {
     @Binding var showSettings: Bool
-    @StateObject private var locationManager = LocationManager()
-    @StateObject private var geocodingService = GeocodingService.shared
-    @ObservedObject private var localizationManager = LocalizationManager.shared
+    @State private var viewModel = CompassViewModel()
+    private var localizationManager = LocalizationManager.shared
     @Environment(\.scenePhase) private var scenePhase
-    
-    @State private var selectedDestination = 0
-    @State private var addresses: [String] = []
-    @State private var destinationCoordinates: [CLLocationCoordinate2D] = []
-    @State private var slotLabels: [String] = [
-        AddressLabelStore.load(slot: 1),
-        AddressLabelStore.load(slot: 2),
-        AddressLabelStore.load(slot: 3)
-    ]
-    @State private var angle: Double = 0
-    @State private var distance: Double = 0
+    @Environment(\.accessibilityAssistiveAccessEnabled) private var assistiveAccessEnabled
     @State private var showDonation = false
-    @State private var arrowRotation: Double = 0 // 基于最短角度差的累计显示角度（不整圈）
-    @State private var spinAngle: Double = 0 // 一次性旋转动画角度（0→360）
-    @State private var isSpinning: Bool = false // 防止叠加旋转
-    @State private var showSetupPrompt: Bool = false // 未设置地址时的提示弹窗
-    // 动态渲染参数（前台优先体验，120Hz更顺滑）
-    @State private var angleEpsilon: Double = 0.12 // 最小角度阈值，前台/120Hz 会下调
-    @State private var arrowAnimDuration: Double = 0.10 // 动画时长，前台/120Hz 会下调
-    // 发布到 App Group 的节流/合并控制
-    @State private var publishWork: DispatchWorkItem?
-    @State private var lastPublishedDistance: Double = .nan
-    @State private var lastPublishedBearing: Double = .nan
-    private let publishCoalesceInterval: TimeInterval = 0.5 // 合并间隔（~2Hz 最大）
     
-    
-    private var destinationLabels: [String] {
-        [labelForSlot(0), labelForSlot(1), labelForSlot(2)]
+    init(showSettings: Binding<Bool>) {
+        self._showSettings = showSettings
     }
-    
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -56,31 +31,33 @@ struct CompassView: View {
                 ScrollView {
                     VStack(spacing: 30) {
                         
-                        // 目的地卡片
-                        if !addresses.isEmpty && selectedDestination < addresses.count {
-                            VStack(spacing: 12) {
-                                HStack {
-                                    Image(systemName: "house.fill")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(.blue)
-                                    Text(localized: .destination)
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                    Spacer()
+                        // 目的地卡片 - 在 Assistive Access 模式下隐藏以简化
+                        if !viewModel.isAssistiveAccessEnabled {
+                            if !viewModel.destinations.isEmpty && viewModel.selectedDestinationIndex < viewModel.destinations.count {
+                                VStack(spacing: 12) {
+                                    HStack {
+                                        Image(systemName: "house.fill")
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.blue)
+                                        Text(localized: .destination)
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                        Spacer()
+                                    }
+                                    
+                                    Text(viewModel.destinations[viewModel.selectedDestinationIndex].address)
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .multilineTextAlignment(.leading)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
-                                
-                                Text(addresses[selectedDestination])
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .multilineTextAlignment(.leading)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(20)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color(.systemBackground))
+                                        .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
+                                )
+                                .padding(.horizontal, 20)
                             }
-                            .padding(20)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(Color(.systemBackground))
-                                    .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
-                            )
-                            .padding(.horizontal, 20)
                         }
                         
                         // 现代化指南针
@@ -95,7 +72,8 @@ struct CompassView: View {
                                     ),
                                     lineWidth: 6
                                 )
-                                .frame(width: 320, height: 320)
+                                .frame(width: viewModel.isAssistiveAccessEnabled ? 360 : 320, 
+                                       height: viewModel.isAssistiveAccessEnabled ? 360 : 320)
                             
                             // 内圆背景
                             Circle()
@@ -113,25 +91,21 @@ struct CompassView: View {
                                 .frame(width: 300, height: 300)
                                 .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
                             
-                            // 罗盘刻度和方向标识（随设备旋转反向旋转以保持地理方向）
+                            // 罗盘刻度和方向标识
                             Group {
                                 // 方向刻度
                                 ForEach(0..<8) { tick in
                                     RoundedRectangle(cornerRadius: 2)
-                                        .fill(
-                                            tick % 2 == 0 
-                                            ? Color.primary.opacity(0.8)
-                                            : Color.primary.opacity(0.4)
-                                        )
+                                        .fill(tick % 2 == 0 ? Color.primary.opacity(0.8) : Color.primary.opacity(0.4))
                                         .frame(width: 3, height: tick % 2 == 0 ? 25 : 15)
                                         .offset(y: -140)
                                         .rotationEffect(.degrees(Double(tick) * 45))
                                 }
                                 
-                                // 方向标识 - 修复为正确的指南针方向
+                                // 方向标识
                                 ForEach(0..<4) { index in
                                     let directions = ["N", "E", "S", "W"]
-                                    let angles = [0.0, 90.0, 180.0, 270.0] // N上, E右, S下, W左
+                                    let angles = [0.0, 90.0, 180.0, 270.0]
                                     Text(directions[index])
                                         .font(.system(size: 18, weight: .bold))
                                         .foregroundColor(.primary.opacity(0.7))
@@ -139,7 +113,7 @@ struct CompassView: View {
                                         .rotationEffect(.degrees(angles[index]))
                                 }
                             }
-                            .rotationEffect(.degrees(-locationManager.currentHeading))
+                            .rotationEffect(.degrees(-viewModel.currentHeading))
                             
                             // 中心点
                             Circle()
@@ -147,130 +121,28 @@ struct CompassView: View {
                                 .frame(width: 12, height: 12)
                                 .shadow(color: .blue.opacity(0.5), radius: 4)
                             
-                            // 现代化箭头 - 优先使用自定义图片资源，其次回退到 SF Symbol
-                            // 使用累计的最短角度差显示值，避免自然转动手机时出现整圈旋转
-                            CompassArrow(rotation: arrowRotation + spinAngle)
+                            // 现代化箭头
+                            CompassArrow(rotation: viewModel.arrowRotation + viewModel.spinAngle)
                                 .contentShape(Circle())
                                 .onTapGesture {
-                                    // 趣味动效：点击时顺时针旋转一圈（带轻微回弹），显式动画提高流畅度
-                                    guard !isSpinning else { return }
-                                    isSpinning = true
-                                    spinAngle = 0
-                                    withAnimation(.interpolatingSpring(stiffness: 120, damping: 10)) {
-                                        spinAngle = 360
-                                    }
-                                    // 动画结束后将角度复位，避免无限增大导致的数值累积
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-                                        withAnimation(nil) {
-                                            spinAngle = 0
-                                            isSpinning = false
-                                        }
-                                    }
+                                    viewModel.spinArrow()
                                 }
-                                // 预合成以减少图层混合的开销，提升旋转时的流畅度
                                 .compositingGroup()
+                                .sensoryFeedback(.impact(weight: .light, intensity: 1.0), trigger: viewModel.triggerAlignmentFeedback) { old, new in
+                                    return new == true
+                                }
                         }
                         .padding(.horizontal, 20)
                         
                         // 距离显示卡片
-                        VStack(spacing: 16) {
-                            HStack {
-                                Image(systemName: "ruler")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(.orange)
-                                Text(localized: .distance)
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                            }
-                            
-                            if #available(iOS 16.0, *) {
-                                ViewThatFits(in: .horizontal) {
-                                    // 方案一：同一行显示（数字 + 单位）
-                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                        Text("\(Int(distance))")
-                                            .font(.system(size: 48, weight: .bold, design: .rounded))
-                                            .foregroundStyle(
-                                                LinearGradient(
-                                                    colors: [.blue, .purple],
-                                                    startPoint: .leading,
-                                                    endPoint: .trailing
-                                                )
-                                            )
-                                            .lineLimit(1)
-                                            .fixedSize(horizontal: true, vertical: false)
-                                            .layoutPriority(2)
-                                            .animation(.easeInOut(duration: 0.3), value: distance)
-
-                                        Text(localized: .meters)
-                                            .font(.system(size: 24, weight: .medium))
-                                            .foregroundColor(.secondary)
-                                            .lineLimit(1) // 保证单位整体，不出现局部换行
-                                            .fixedSize(horizontal: true, vertical: false)
-
-                                        Spacer(minLength: 0)
-                                    }
-
-                                    // 方案二：不够放时，整个单位换到下一行
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("\(Int(distance))")
-                                            .font(.system(size: 48, weight: .bold, design: .rounded))
-                                            .foregroundStyle(
-                                                LinearGradient(
-                                                    colors: [.blue, .purple],
-                                                    startPoint: .leading,
-                                                    endPoint: .trailing
-                                                )
-                                            )
-                                            .lineLimit(1)
-                                            .fixedSize(horizontal: true, vertical: false)
-                                            .layoutPriority(2)
-                                            .animation(.easeInOut(duration: 0.3), value: distance)
-
-                                        Text(localized: .meters)
-                                            .font(.system(size: 24, weight: .medium))
-                                            .foregroundColor(.secondary)
-                                            .lineLimit(1)
-                                            .fixedSize(horizontal: true, vertical: false)
-                                    }
-                                }
-                            } else {
-                                // iOS 15 回退：使用垂直布局
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("\(Int(distance))")
-                                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                                        .foregroundStyle(
-                                            LinearGradient(
-                                                colors: [.blue, .purple],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                        .lineLimit(1)
-                                        .fixedSize(horizontal: true, vertical: false)
-                                        .layoutPriority(2)
-                                        .animation(.easeInOut(duration: 0.3), value: distance)
-
-                                    Text(localized: .meters)
-                                        .font(.system(size: 24, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(1)
-                                        .fixedSize(horizontal: true, vertical: false)
-                                }
-                            }
-                        }
-                        .padding(20)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(.systemBackground))
-                                .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
-                        )
-                        .padding(.horizontal, 20)
+                        distanceCard
                         
                         // 底部地址图标切换
-                        destinationIconSwitcher
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 8)
+                        if !viewModel.isAssistiveAccessEnabled {
+                            destinationIconSwitcher
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
+                        }
                         
                         // 底部间距
                         Color.clear
@@ -280,108 +152,27 @@ struct CompassView: View {
             }
         }
         .safeAreaInset(edge: .top) {
-            HStack {
-                // 打赏按钮
-                Button(action: { showDonation = true }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: 16, weight: .medium))
-                        Text(localized: .donate)
-                            .font(.system(size: 18, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 25)
-                            .fill(
-                                LinearGradient(
-                                    colors: [.orange, .red],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Spacer()
-
-                Button(action: { showSettings = true }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 16, weight: .medium))
-                        Text(localized: .settings)
-                            .font(.system(size: 18, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 25)
-                            .fill(Color.blue)
-                            .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
-                    )
-                }
-                .buttonStyle(PlainButtonStyle())
+            if !viewModel.isAssistiveAccessEnabled {
+                topBar
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 6)
         }
         .onAppear {
-            loadAddresses()
-            loadLabels()
-            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
-                startLocationUpdates()
-                // 确保无论授权是否在此前已授予，都立即开启方向更新
-                locationManager.startHeadingUpdates()
-            }
-            applyActiveDisplayProfile()
+            viewModel.onAppear()
+            viewModel.isAssistiveAccessEnabled = assistiveAccessEnabled
         }
-        .onChange(of: showSettings) { newValue in
-            // 进入设置页时暂停磁力计，降低CPU与能耗；返回时恢复并刷新
-            if newValue {
-                locationManager.stopHeadingUpdates()
-            } else {
-                loadAddresses()
-                loadLabels()
-                updateDirection()
-                locationManager.startHeadingUpdates()
-                applyActiveDisplayProfile()
-            }
+        .onChange(of: showSettings) { _, newValue in
+            viewModel.onSettingsChange(isShowing: newValue)
         }
-        .onChange(of: scenePhase) { phase in
-            switch phase {
-            case .active:
-                applyActiveDisplayProfile()
-            case .inactive, .background:
-                applyPassiveDisplayProfile()
-            @unknown default:
-                break
-            }
+        .onChange(of: scenePhase) { _, phase in
+            viewModel.onScenePhaseChange(to: phase)
         }
-        .onChange(of: localizationManager.currentLanguage) { _ in
-            loadLabels()
-        }
-        // 实时位置变化时，刷新距离与方向（使用发布者，避免 Equatable 限制）
-        .onReceive(locationManager.$currentLocation) { _ in
-            updateDirection()
-        }
-        .onChange(of: selectedDestination) { _ in
-            updateDirection()
-        }
-        .onChange(of: locationManager.currentHeading) { _ in
-            // 设备朝向变化时，更新箭头显示角度（按最短角度差累积）
-            updateArrowRotation()
-            // 合并调度发布，避免每次朝向微动都触发存取与 Widget 刷新
-            schedulePublish()
+        .onChange(of: assistiveAccessEnabled) { _, newValue in
+            viewModel.isAssistiveAccessEnabled = newValue
         }
         .sheet(isPresented: $showDonation) {
             DonationView(isPresented: $showDonation)
         }
-        // 点击未设置的地点时弹出提示，用户可选择前往设置
-        .alert(String(localized: .locationNotSetTitle), isPresented: $showSetupPrompt) {
+        .alert(String(localized: .locationNotSetTitle), isPresented: Binding(get: { viewModel.showSetupPrompt }, set: { viewModel.showSetupPrompt = $0 })) {
             Button(String(localized: .cancel), role: .cancel) {}
             Button(String(localized: .setupNow)) {
                 showSettings = true
@@ -391,214 +182,155 @@ struct CompassView: View {
         }
     }
     
-    private func loadAddresses() {
-        var loadedAddresses: [String] = []
-        var loadedCoordinates: [CLLocationCoordinate2D] = []
-
-        func readSavedCoord(slot: Int) -> CLLocationCoordinate2D? {
-            let latKey = slot == 1 ? UDKeys.address1Lat : slot == 2 ? UDKeys.address2Lat : UDKeys.address3Lat
-            let lonKey = slot == 1 ? UDKeys.address1Lon : slot == 2 ? UDKeys.address2Lon : UDKeys.address3Lon
-            if let latStr = SecureStorage.shared.getString(forKey: latKey),
-               let lonStr = SecureStorage.shared.getString(forKey: lonKey),
-               let lat = Double(latStr), let lon = Double(lonStr) {
-                return CLLocationCoordinate2D(latitude: lat, longitude: lon)
+    private var distanceCard: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Image(systemName: "ruler")
+                    .font(.system(size: 18))
+                    .foregroundColor(.orange)
+                Text(localized: .distance)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                Spacer()
             }
-            return nil
-        }
-
-        // slot 1
-        if let addr1 = getAddress(forKey: UDKeys.address1), !addr1.isEmpty {
-            loadedAddresses.append(addr1)
-            if let coord = readSavedCoord(slot: 1) {
-                loadedCoordinates.append(coord)
+            
+            if #available(iOS 16.0, *) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        distanceText
+                        Text(localized: .meters)
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.secondary)
+                        Spacer(minLength: 0)
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        distanceText
+                        Text(localized: .meters)
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                }
             } else {
-                loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0))
-                geocodeAndStoreAddress(addr1, index: loadedCoordinates.count - 1, slot: 1)
-            }
-        }
-        // slot 2
-        if let addr2 = getAddress(forKey: UDKeys.address2), !addr2.isEmpty {
-            loadedAddresses.append(addr2)
-            if let coord = readSavedCoord(slot: 2) {
-                loadedCoordinates.append(coord)
-            } else {
-                loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0))
-                geocodeAndStoreAddress(addr2, index: loadedCoordinates.count - 1, slot: 2)
-            }
-        }
-        // slot 3
-        if let addr3 = getAddress(forKey: UDKeys.address3), !addr3.isEmpty {
-            loadedAddresses.append(addr3)
-            if let coord = readSavedCoord(slot: 3) {
-                loadedCoordinates.append(coord)
-            } else {
-                loadedCoordinates.append(CLLocationCoordinate2D(latitude: 0, longitude: 0))
-                geocodeAndStoreAddress(addr3, index: loadedCoordinates.count - 1, slot: 3)
-            }
-        }
-
-        addresses = loadedAddresses
-        destinationCoordinates = loadedCoordinates
-        if selectedDestination >= addresses.count {
-            selectedDestination = max(0, addresses.count - 1)
-        }
-        updateDirection()
-    }
-
-    private func loadLabels() {
-        slotLabels = [
-            AddressLabelStore.load(slot: 1),
-            AddressLabelStore.load(slot: 2),
-            AddressLabelStore.load(slot: 3)
-        ]
-    }
-
-    private func geocodeAndStoreAddress(_ address: String, index: Int, slot: Int) {
-        geocodingService.geocodeAddress(address) { coordinate in
-            guard let coordinate = coordinate else { return }
-
-            // Persist coordinates for this slot so we no longer re-geocode on next launches
-            let latKey = slot == 1 ? UDKeys.address1Lat : slot == 2 ? UDKeys.address2Lat : UDKeys.address3Lat
-            let lonKey = slot == 1 ? UDKeys.address1Lon : slot == 2 ? UDKeys.address2Lon : UDKeys.address3Lon
-            SecureStorage.shared.setString(String(coordinate.latitude), forKey: latKey)
-            SecureStorage.shared.setString(String(coordinate.longitude), forKey: lonKey)
-
-            DispatchQueue.main.async {
-                if index < self.destinationCoordinates.count {
-                    self.destinationCoordinates[index] = coordinate
-                    self.updateDirection()
+                VStack(alignment: .leading, spacing: 6) {
+                    distanceText
+                    Text(localized: .meters)
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundColor(.secondary)
                 }
             }
         }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 5)
+        )
+        .padding(.horizontal, 20)
     }
     
-    private func startLocationUpdates() {
-        locationManager.startLocationUpdates { location in
-            updateDirection()
-        }
+    private var distanceText: some View {
+        Text("\(Int(viewModel.distance))")
+            .font(.system(size: 48, weight: .bold, design: .rounded))
+            .foregroundStyle(LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing))
+            .animation(.easeInOut(duration: 0.3), value: viewModel.distance)
     }
     
-    private func updateDirection() {
-        guard selectedDestination < destinationCoordinates.count else { return }
-        
-        let destinationCoord = destinationCoordinates[selectedDestination]
-        
-        // 如果还没有获取到目标坐标，使用默认值
-        guard destinationCoord.latitude != 0 && destinationCoord.longitude != 0 else {
-            // 使用名古屋市中心作为默认位置进行演示
-            let nagoyaCenter = Coordinates.nagoyaCenter
-            calculateDirectionAndDistance(to: nagoyaCenter)
-            return
-        }
-        
-        calculateDirectionAndDistance(to: destinationCoord)
-        // 距离/角度刷新后，调度合并发布（仅写入 App Group，已在 SharedDataStore 内部再做节流与刷新聚合）
-        schedulePublish()
-    }
-    
-    private func calculateDirectionAndDistance(to destination: CLLocationCoordinate2D) {
-        // 使用当前位置，如果没有则使用模拟位置（名古屋站附近）
-        let currentCoord: CLLocationCoordinate2D
-        if let current = locationManager.currentLocation?.coordinate {
-            currentCoord = current
-        } else {
-            // 模拟位置：名古屋站
-            currentCoord = Coordinates.nagoyaStation
-        }
-        
-        // 计算距离（米）
-        let calculatedDistance = geocodingService.calculateDistance(from: currentCoord, to: destination)
-        distance = calculatedDistance
-        
-        // 计算方向角（度）
-        let calculatedBearing = geocodingService.calculateBearing(from: currentCoord, to: destination)
-        
-        // 箭头应该指向目标的绝对地理方向
-        angle = calculatedBearing
-        // 更新箭头显示角度（最短角度差累计），防止自然转动时整圈旋转
-        updateArrowRotation()
-    }
+    private var topBar: some View {
+        HStack {
+            Button(action: { showDonation = true }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 16, weight: .medium))
+                    Text(localized: .donate)
+                        .font(.system(size: 18, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 25)
+                        .fill(LinearGradient(colors: [.orange, .red], startPoint: .leading, endPoint: .trailing))
+                        .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
 
-    // MARK: - Arrow rotation helpers
-    private func wrapDelta(_ delta: Double) -> Double {
-        // 归一化到 [-180, 180]
-        var d = delta.truncatingRemainder(dividingBy: 360)
-        if d > 180 { d -= 360 }
-        if d < -180 { d += 360 }
-        return d
+            Spacer()
+
+            Button(action: { showSettings = true }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 16, weight: .medium))
+                    Text(localized: .settings)
+                        .font(.system(size: 18, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 25)
+                        .fill(Color.blue)
+                        .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 6)
     }
     
-    private func updateArrowRotation() {
-        // 刻度盘以 -heading 反向旋转，使 N 始终在顶部。
-        // 箭头应该显示为相对设备的方位：bearing - heading。
-        // 这样当 bearing == heading 时，箭头指向正上方，效果与系统指南针一致。
-        let target = angle - locationManager.currentHeading
-        // 与当前显示角度的最短差值
-        let diff = wrapDelta(target - arrowRotation)
-        // 对极小角度变化不做动画更新（阈值随前/后台动态调整）
-        if abs(diff) < angleEpsilon { return }
-        // 采用最短路径更新显示角度（避免跨 0° 时出现整圈旋转）
-        if isSpinning {
-            // 旋转一圈动画进行中：为了避免动画冲突，立即更新，无额外动画
-            arrowRotation += diff
-        } else {
-            // 非点击旋转场景：线性短动画平滑过渡
-            withAnimation(.linear(duration: arrowAnimDuration)) {
-                arrowRotation += diff
+    private var destinationIconSwitcher: some View {
+        HStack(spacing: 28) {
+            ForEach(0..<3, id: \.self) { slot in
+                let addr = viewModel.slotAddresses[slot]
+                let isAvailable = !addr.isEmpty
+                let isSelected = isAvailable && viewModel.currentSlotIndex() == slot
+                
+                Button(action: { viewModel.selectSlot(slot) }) {
+                    VStack(spacing: 8) {
+                        ZStack {
+                            Circle()
+                                .fill(slotGradient(slot))
+                                .opacity(isAvailable ? 1.0 : 0.25)
+                                .frame(width: 60, height: 60)
+                                .overlay(
+                                    Circle()
+                                        .stroke(lineWidth: isSelected ? 4 : 0)
+                                        .foregroundStyle(LinearGradient(colors: [.blue, .green], startPoint: .leading, endPoint: .trailing))
+                                )
+                                .shadow(color: (isSelected ? Color.green : Color.black).opacity(isAvailable ? 0.18 : 0.0), radius: isSelected ? 10 : 8, x: 0, y: 4)
+                            Image(systemName: slotIconName(slot))
+                                .foregroundColor(.white)
+                                .font(.system(size: 22, weight: .semibold))
+                                .opacity(isAvailable ? 1.0 : 0.5)
+                        }
+                        Text(viewModel.labelForSlot(slot))
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(isAvailable ? Color(UIColor.label) : Color(UIColor.tertiaryLabel))
+                            .frame(width: 60)
+                            .minimumScaleFactor(0.9)
+                            .lineLimit(1)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityShowsLargeContentViewer {
+                    VStack(spacing: 12) {
+                        Image(systemName: slotIconName(slot))
+                            .font(.system(size: 60))
+                        Text(viewModel.labelForSlot(slot))
+                            .font(.system(size: 24, weight: .bold))
+                    }
+                }
             }
         }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+        )
     }
-
-    // MARK: - Display profiles
-    private func applyActiveDisplayProfile() {
-        // 前台：优先体验。检测 120Hz 设备，降低阈值与动画时长，并提升方向更新频率
-        let fps = UIScreen.main.maximumFramesPerSecond
-        let isProMotion = fps >= 120
-        angleEpsilon = isProMotion ? 0.06 : 0.10
-        arrowAnimDuration = isProMotion ? 0.07 : 0.10
-        // 更细的方向步进（0.5°）提升顺滑度
-        locationManager.setHeadingFilter(0.5)
-    }
-
-    private func applyPassiveDisplayProfile() {
-        // 后台/非活动：倾向省电
-        angleEpsilon = 0.18
-        arrowAnimDuration = 0.12
-        locationManager.setHeadingFilter(1.5)
-    }
-
-    // MARK: - Slot helpers and UI
-    private func slotAddress(_ slot: Int) -> String {
-        switch slot {
-        case 0:
-            return getAddress(forKey: UDKeys.address1) ?? ""
-        case 1:
-            return getAddress(forKey: UDKeys.address2) ?? ""
-        default:
-            return getAddress(forKey: UDKeys.address3) ?? ""
-        }
-    }
-
-    private func labelForSlot(_ slot: Int) -> String {
-        let index = max(0, min(slot, 2))
-        let saved = slotLabels.indices.contains(index) ? slotLabels[index].trimmingCharacters(in: .whitespacesAndNewlines) : ""
-        if saved.isEmpty {
-            return AddressLabelStore.defaultLabel(for: index + 1)
-        }
-        return saved
-    }
-
-    private func getAddress(forKey key: String) -> String? {
-        if let secured = SecureStorage.shared.getString(forKey: key), !secured.isEmpty {
-            return secured
-        }
-        // 兼容旧版本：回退读取 UserDefaults 明文
-        if let old = UserDefaults.standard.string(forKey: key), !old.isEmpty {
-            return old
-        }
-        return nil
-    }
-
+    
     private func slotIconName(_ slot: Int) -> String {
         switch slot {
         case 0: return "house.fill"
@@ -609,339 +341,9 @@ struct CompassView: View {
 
     private func slotGradient(_ slot: Int) -> LinearGradient {
         switch slot {
-        case 0:
-            return LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case 1:
-            return LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing)
-        default:
-            return LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
-        }
-    }
-
-    private func selectSlot(_ slot: Int) {
-        let addr = slotAddress(slot)
-        guard !addr.isEmpty else {
-            // 未设置时，弹出提示是否前往设置页
-            showSetupPrompt = true
-            return
-        }
-        if let idx = addresses.firstIndex(of: addr) {
-            selectedDestination = idx
-            updateDirection()
-        }
-    }
-
-    // 合并调度发布到 App Group，避免高频写入与刷新
-    private func schedulePublish() {
-        // 取消上一次调度
-        publishWork?.cancel()
-        let work = DispatchWorkItem { [distance, angle] in
-            let slot = currentSlotIndex()
-            let label = destinationLabels[slot]
-            let bearingRel = wrapDelta(angle - locationManager.currentHeading)
-
-            // 若变化极小则直接跳过
-            let lastD = lastPublishedDistance
-            let lastB = lastPublishedBearing
-            let distDiff = abs(distance - (lastD.isNaN ? distance : lastD))
-            var bDiff = bearingRel - (lastB.isNaN ? bearingRel : lastB)
-            bDiff = bDiff.truncatingRemainder(dividingBy: 360)
-            if bDiff > 180 { bDiff -= 360 }
-            if bDiff < -180 { bDiff += 360 }
-            if distDiff < 1.0 && abs(bDiff) < 0.5 {
-                return
-            }
-
-            let snapshot = NaviSnapshot(
-                slot: slot,
-                destinationLabel: label,
-                distanceMeters: distance,
-                bearingRelToDevice: bearingRel,
-                lastUpdated: Date()
-            )
-            SharedDataStore.shared.save(snapshot: snapshot)
-            lastPublishedDistance = distance
-            lastPublishedBearing = bearingRel
-
-            // 即使禁用了 Live Activity，下面调用也会被内部开关短路；保留以便未来一键恢复
-            LiveActivityManager.shared.startIfAvailable(slot: slot, destinationLabel: label)
-            LiveActivityManager.shared.update(distanceMeters: distance, bearingRelToDevice: bearingRel)
-        }
-        publishWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + publishCoalesceInterval, execute: work)
-    }
-
-    // 当前所选地址对应的槽位（0: Home, 1: Work, 2: Other）
-    private func currentSlotIndex() -> Int {
-        guard selectedDestination < addresses.count else { return 0 }
-        let currentAddr = addresses[selectedDestination]
-        if currentAddr == (getAddress(forKey: UDKeys.address1) ?? "") { return 0 }
-        if currentAddr == (getAddress(forKey: UDKeys.address2) ?? "") { return 1 }
-        if currentAddr == (getAddress(forKey: UDKeys.address3) ?? "") { return 2 }
-        return 0
-    }
-
-    // 向 App Group 与 Live Activities 发布当前导航快照
-    private func publishLiveData() {
-        guard selectedDestination < destinationCoordinates.count else { return }
-        let slot = currentSlotIndex()
-        let label = destinationLabels[slot]
-        let bearingRel = wrapDelta(angle - locationManager.currentHeading)
-        let snapshot = NaviSnapshot(
-            slot: slot,
-            destinationLabel: label,
-            distanceMeters: distance,
-            bearingRelToDevice: bearingRel,
-            lastUpdated: Date()
-        )
-        SharedDataStore.shared.save(snapshot: snapshot)
-        LiveActivityManager.shared.startIfAvailable(slot: slot, destinationLabel: label)
-        LiveActivityManager.shared.update(distanceMeters: distance, bearingRelToDevice: bearingRel)
-    }
-
-    private var destinationIconSwitcher: some View {
-        let slots = [0, 1, 2]
-        return HStack(spacing: 28) {
-            ForEach(slots, id: \.self) { slot in
-                let addr = slotAddress(slot)
-                let isAvailable = !addr.isEmpty
-                let isSelected = isAvailable && selectedDestination < addresses.count && addresses[selectedDestination] == addr
-                Button(action: { selectSlot(slot) }) {
-                    VStack(spacing: 8) {
-                        ZStack {
-                            Circle()
-                                .fill(slotGradient(slot))
-                                .opacity(isAvailable ? 1.0 : 0.25)
-                                .frame(width: 60, height: 60)
-                                .overlay(
-                                    Circle()
-                                        .stroke(lineWidth: isSelected ? 4 : 0)
-                                        .foregroundStyle(
-                                            LinearGradient(
-                                                colors: [.blue, .green],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                )
-                                .shadow(
-                                    color: (isSelected ? Color.green : Color.black).opacity(isAvailable ? 0.18 : 0.0),
-                                    radius: isSelected ? 10 : 8,
-                                    x: 0, y: 4
-                                )
-                            Image(systemName: slotIconName(slot))
-                                .foregroundColor(.white)
-                                .font(.system(size: 22, weight: .semibold))
-                                .opacity(isAvailable ? 1.0 : 0.5)
-                        }
-                        Text(labelForSlot(slot))
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(isAvailable ? Color(UIColor.label) : Color(UIColor.tertiaryLabel))
-                            .frame(width: 60)
-                            .minimumScaleFactor(0.9)
-                            .lineLimit(1)
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
-        )
-    }
-}
-
-// 复用的指南针箭头组件：优先使用自定义图片资源，否则回退到 SF Symbols
-struct CompassArrow: View {
-    let rotation: Double // 传入 angle - currentHeading
-    
-    private func customArrowImage() -> UIImage? {
-        // 支持多种命名，任意一个存在即使用
-        let candidates = [
-            "CompassArrowBlue",
-            "compass_arrow_blue",
-            "compass_arrow",
-            "navigation_arrow_blue"
-        ]
-        for name in candidates {
-            if let img = UIImage(named: name) { return img }
-        }
-        return nil
-    }
-    
-    var body: some View {
-        Group {
-            if let uiImage = customArrowImage() {
-                // 自定义图片（建议图片默认朝向为 45° NE）
-                Image(uiImage: uiImage)
-                    .renderingMode(.original)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 84, height: 84)
-                    .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
-                    .rotationEffect(.degrees(rotation - 45))
-            } else {
-                // 回退到 SF Symbol: location.fill（默认 45° NE）
-                ZStack {
-                    Image(systemName: "location.fill")
-                        .font(.system(size: 70, weight: .bold))
-                        .foregroundColor(.black.opacity(0.12))
-                        .offset(x: 2, y: 2)
-                        .rotationEffect(.degrees(rotation - 45))
-                    
-                    Image(systemName: "location.fill")
-                        .font(.system(size: 70, weight: .bold))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color(red: 0.15, green: 0.6, blue: 1.0), Color.blue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .rotationEffect(.degrees(rotation - 45))
-                        .shadow(color: Color.blue.opacity(0.35), radius: 8, x: 0, y: 2)
-                }
-            }
-        }
-        .accessibilityLabel(Text("Compass Arrow"))
-    }
-}
-
-class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
-    private let locationManager = CLLocationManager()
-    private var locationUpdateHandler: ((CLLocation) -> Void)?
-    
-    @Published var currentLocation: CLLocation?
-    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
-    @Published var currentHeading: CLLocationDirection = 0
-    
-    override init() {
-        super.init()
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 10 // 10米的距离过滤
-        
-        // 启用磁力计方向检测
-        if CLLocationManager.headingAvailable() {
-            // 细粒度角度步进（1°）即可满足指向需求，同时显著降低回调频率
-            locationManager.headingFilter = 1
-            updateHeadingOrientation() // 根据设备方向设置合适的 headingOrientation
-        }
-        
-        // 立即请求权限
-        authorizationStatus = locationManager.authorizationStatus
-        if authorizationStatus == .notDetermined {
-            locationManager.requestWhenInUseAuthorization()
-        }
-
-        // 监听设备方向变化，动态调整 headingOrientation（面朝上时使用 .faceUp 更接近系统指南针）
-        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
-        NotificationCenter.default.addObserver(self, selector: #selector(handleOrientationChange), name: UIDevice.orientationDidChangeNotification, object: nil)
-    }
-    
-    func startLocationUpdates(completion: @escaping (CLLocation) -> Void) {
-        locationUpdateHandler = completion
-        
-        switch authorizationStatus {
-        case .notDetermined:
-            locationManager.requestWhenInUseAuthorization()
-        case .authorizedWhenInUse, .authorizedAlways:
-            locationManager.startUpdatingLocation()
-        default:
-            break
-        }
-    }
-    
-    func startHeadingUpdates() {
-        if CLLocationManager.headingAvailable() {
-            locationManager.startUpdatingHeading()
-        }
-    }
-    
-    func stopHeadingUpdates() {
-        locationManager.stopUpdatingHeading()
-    }
-
-    // 允许外部根据场景调整角度步进
-    func setHeadingFilter(_ degrees: CLLocationDegrees) {
-        if CLLocationManager.headingAvailable() {
-            locationManager.headingFilter = degrees
-        }
-    }
-
-    deinit {
-        NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
-        currentLocation = location
-        locationUpdateHandler?(location)
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        authorizationStatus = status
-        
-        switch status {
-        case .authorizedWhenInUse, .authorizedAlways:
-            locationManager.startUpdatingLocation()
-            startHeadingUpdates()
-        case .denied, .restricted:
-            print("位置权限被拒绝")
-        case .notDetermined:
-            locationManager.requestWhenInUseAuthorization()
-        @unknown default:
-            break
-        }
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-        // 检查方向准确度，小于0表示无效
-        if newHeading.headingAccuracy < 0 { 
-            print("方向数据无效：准确度 = \(newHeading.headingAccuracy)")
-            return 
-        }
-        
-        // 优先使用真北；若不可用则回落到磁北（系统指南针在定位未就绪前也会短暂使用磁北）。
-        let heading: CLLocationDirection
-        if newHeading.trueHeading >= 0 {
-            heading = newHeading.trueHeading
-            #if DEBUG
-            print("使用真北方向：\(heading)°，accuracy=\(newHeading.headingAccuracy)")
-            #endif
-        } else {
-            heading = newHeading.magneticHeading
-            #if DEBUG
-            print("使用磁北方向：\(heading)°，accuracy=\(newHeading.headingAccuracy)")
-            #endif
-        }
-        
-        DispatchQueue.main.async {
-            self.currentHeading = heading
-        }
-    }
-
-    // 当系统认为需要时，显示校准界面（与系统指南针保持一致的流程）
-    func locationManagerShouldDisplayHeadingCalibration(_ manager: CLLocationManager) -> Bool {
-        return true
-    }
-
-    // MARK: - Heading orientation helpers
-    @objc private func handleOrientationChange() {
-        updateHeadingOrientation()
-    }
-
-    private func updateHeadingOrientation() {
-        // 与系统指南针接近的策略：
-        // - 平放时使用 .faceUp（系统指南针常用姿态）
-        // - 其他姿态使用 .portrait，避免横屏/倒置带来的象限偏移
-        let dev = UIDevice.current.orientation
-        let cl: CLDeviceOrientation = (dev == .faceUp || dev == .faceDown) ? .faceUp : .portrait
-        if CLLocationManager.headingAvailable() {
-            locationManager.headingOrientation = cl
+        case 0: return LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
+        case 1: return LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing)
+        default: return LinearGradient(colors: [.pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
     }
 }

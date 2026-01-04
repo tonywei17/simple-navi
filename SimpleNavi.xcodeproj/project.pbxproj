@@ -16,13 +16,20 @@
 		1A1A1A2C1A1A1A2C /* GeocodingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A2B1A1A1A2B /* GeocodingService.swift */; };
 		1A1A1A2E1A1A1A2E /* JapaneseAddressManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A2D1A1A1A2D /* JapaneseAddressManager.swift */; };
 		1A1A1A301A1A1A30 /* AddressMapConfirmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A2F1A1A1A2F /* AddressMapConfirmView.swift */; };
-		1A1A1A321A1A1A32 /* SetupViewSimple.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A311A1A1A31 /* SetupViewSimple.swift */; };
 		1A1A1A341A1A1A34 /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A331A1A1A35 /* LocalizationManager.swift */; };
 		1A1A1A361A1A1A36 /* LanguageSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A351A1A1A37 /* LanguageSelectionView.swift */; };
 		1A1A1A381A1A1A38 /* DonationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A371A1A1A39 /* DonationView.swift */; };
 		1A1A1A3A1A1A1A3A /* Coordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3B1A1A1A3B /* Coordinates.swift */; };
 		1A1A1A3C1A1A1A3C /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */; };
 		1A1A1A401A1A1A40 /* SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3E1A1A1A3E /* SecureStorage.swift */; };
+		1A1A1A421A1A1A42 /* CompassArrow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A411A1A1A41 /* CompassArrow.swift */; };
+		1A1A1A441A1A1A44 /* CompassViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A431A1A1A43 /* CompassViewModel.swift */; };
+		1A1A1A461A1A1A46 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A451A1A1A45 /* LocationManager.swift */; };
+		1A1A1A481A1A1A48 /* NaviAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A471A1A1A47 /* NaviAppIntents.swift */; };
+		1A1A1A491A1A1A49 /* NaviAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A471A1A1A47 /* NaviAppIntents.swift */; };
+		1A1A1A501A1A1A50 /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */; };
+		1A1A1A511A1A1A51 /* SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A3E1A1A1A3E /* SecureStorage.swift */; };
+		1A1A1A521A1A1A52 /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A331A1A1A35 /* LocalizationManager.swift */; };
 		1A1A1A641A1A1A64 /* SimpleNaviTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A631A1A1A63 /* SimpleNaviTests.swift */; };
 		1E30B2A300000000000000B1 /* SharedDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E30B2A000000000000000A1 /* SharedDataStore.swift */; };
 		1E30B2A32E8FE0BE00F0F209 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E30B2A22E8FE0BE00F0F209 /* WidgetKit.framework */; };
@@ -76,14 +83,16 @@
 		1A1A1A2B1A1A1A2B /* GeocodingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeocodingService.swift; sourceTree = "<group>"; };
 		1A1A1A2D1A1A1A2D /* JapaneseAddressManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JapaneseAddressManager.swift; sourceTree = "<group>"; };
 		1A1A1A2F1A1A1A2F /* AddressMapConfirmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressMapConfirmView.swift; sourceTree = "<group>"; };
-		1A1A1A311A1A1A31 /* SetupViewSimple.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupViewSimple.swift; sourceTree = "<group>"; };
-		1A1A1A331A1A1A33 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1A1A1A331A1A1A35 /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationManager.swift; sourceTree = "<group>"; };
 		1A1A1A351A1A1A37 /* LanguageSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageSelectionView.swift; sourceTree = "<group>"; };
 		1A1A1A371A1A1A39 /* DonationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DonationView.swift; sourceTree = "<group>"; };
 		1A1A1A3B1A1A1A3B /* Coordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinates.swift; sourceTree = "<group>"; };
 		1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsKeys.swift; sourceTree = "<group>"; };
 		1A1A1A3E1A1A1A3E /* SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStorage.swift; sourceTree = "<group>"; };
+		1A1A1A411A1A1A41 /* CompassArrow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompassArrow.swift; sourceTree = "<group>"; };
+		1A1A1A431A1A1A43 /* CompassViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompassViewModel.swift; sourceTree = "<group>"; };
+		1A1A1A451A1A1A45 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		1A1A1A471A1A1A47 /* NaviAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NaviAppIntents.swift; sourceTree = "<group>"; };
 		1A1A1A611A1A1A61 /* SimpleNaviTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimpleNaviTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A1A1A631A1A1A63 /* SimpleNaviTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleNaviTests.swift; sourceTree = "<group>"; };
 		1E30B29A2E8FD79400F0F209 /* SimpleNavi.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SimpleNavi.entitlements; sourceTree = "<group>"; };
@@ -165,12 +174,14 @@
 			children = (
 				1E30B29B2E8FD83000F0F209 /* SimpleNaviDebug.entitlements */,
 				1E30B29A2E8FD79400F0F209 /* SimpleNavi.entitlements */,
-				1A1A1A331A1A1A33 /* Info.plist */,
 				1A1A1A191A1A1A19 /* SimpleNaviApp.swift */,
 				1A1A1A1B1A1A1A1B /* ContentView.swift */,
 				1A1A1A271A1A1A27 /* SetupView.swift */,
-				1A1A1A311A1A1A31 /* SetupViewSimple.swift */,
 				1A1A1A291A1A1A29 /* CompassView.swift */,
+				1A1A1A411A1A1A41 /* CompassArrow.swift */,
+				1A1A1A431A1A1A43 /* CompassViewModel.swift */,
+				1A1A1A451A1A1A45 /* LocationManager.swift */,
+				1A1A1A471A1A1A47 /* NaviAppIntents.swift */,
 				1E30B2A000000000000000A1 /* SharedDataStore.swift */,
 				1E30B2A100000000000000A2 /* LiveActivityModels.swift */,
 				1E30B2A200000000000000A3 /* LiveActivityManager.swift */,
@@ -347,19 +358,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A1A1A1A1A1A1A1A /* SimpleNaviApp.swift in Sources */,
 				1A1A1A1C1A1A1A1C /* ContentView.swift in Sources */,
 				1A1A1A281A1A1A28 /* SetupView.swift in Sources */,
-				1A1A1A3A1A1A1A3A /* Coordinates.swift in Sources */,
-				1A1A1A3C1A1A1A3C /* UserDefaultsKeys.swift in Sources */,
 				1A1A1A2A1A1A1A2A /* CompassView.swift in Sources */,
+				1A1A1A421A1A1A42 /* CompassArrow.swift in Sources */,
+				1A1A1A441A1A1A44 /* CompassViewModel.swift in Sources */,
+				1A1A1A461A1A1A46 /* LocationManager.swift in Sources */,
+				1A1A1A481A1A1A48 /* NaviAppIntents.swift in Sources */,
 				1A1A1A2C1A1A1A2C /* GeocodingService.swift in Sources */,
 				1A1A1A2E1A1A1A2E /* JapaneseAddressManager.swift in Sources */,
 				1A1A1A301A1A1A30 /* AddressMapConfirmView.swift in Sources */,
-				1A1A1A321A1A1A32 /* SetupViewSimple.swift in Sources */,
 				1A1A1A341A1A1A34 /* LocalizationManager.swift in Sources */,
 				1A1A1A361A1A1A36 /* LanguageSelectionView.swift in Sources */,
 				1A1A1A381A1A1A38 /* DonationView.swift in Sources */,
-				1A1A1A1A1A1A1A1A /* SimpleNaviApp.swift in Sources */,
+				1A1A1A3A1A1A1A3A /* Coordinates.swift in Sources */,
+				1A1A1A3C1A1A1A3C /* UserDefaultsKeys.swift in Sources */,
 				1A1A1A401A1A1A40 /* SecureStorage.swift in Sources */,
 				1E30B2A300000000000000B1 /* SharedDataStore.swift in Sources */,
 				1E30B2A400000000000000B2 /* LiveActivityModels.swift in Sources */,
@@ -379,6 +393,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A1A1A491A1A1A49 /* NaviAppIntents.swift in Sources */,
+				1A1A1A501A1A1A50 /* UserDefaultsKeys.swift in Sources */,
+				1A1A1A511A1A1A51 /* SecureStorage.swift in Sources */,
+				1A1A1A521A1A1A52 /* LocalizationManager.swift in Sources */,
 				1E30B2CB2E8FE28000F0F209 /* LiveActivityModels.swift in Sources */,
 				1E30B2CC2E8FE29700F0F209 /* LiveActivityManager.swift in Sources */,
 			);
@@ -453,7 +471,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -510,7 +528,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -598,7 +616,7 @@
 				DEVELOPMENT_TEAM = K2ZG73WM9X;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SimpleNaviTests;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -618,7 +636,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = SimpleNaviTests;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -644,7 +662,7 @@
 				INFOPLIST_FILE = SimpleNaviWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SimpleNaviWidgets;
 				INFOPLIST_KEY_NSHUMANReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -673,7 +691,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SimpleNaviWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SimpleNaviWidgets;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

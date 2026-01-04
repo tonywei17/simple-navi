@@ -1,6 +1,6 @@
-import Foundation
 import SwiftUI
 import CoreLocation
+import Observation
 
 // 支持的语言
 enum SupportedLanguage: String, CaseIterable {
@@ -25,12 +25,13 @@ enum SupportedLanguage: String, CaseIterable {
     }
 }
 
-/// Localization manager responsible for providing localized strings without relying on .strings files.
-/// It keeps an in-memory dictionary for three supported languages and persists the last choice via UserDefaults.
-class LocalizationManager: ObservableObject {
+/// Localization manager modernized with @Observable for 2026.
+@Observable
+@MainActor
+class LocalizationManager {
     static let shared = LocalizationManager()
     
-    @Published var currentLanguage: SupportedLanguage = .chinese {
+    var currentLanguage: SupportedLanguage = .chinese {
         didSet {
             UserDefaults.standard.set(currentLanguage.rawValue, forKey: UDKeys.selectedLanguage)
         }
@@ -43,15 +44,8 @@ class LocalizationManager: ObservableObject {
             currentLanguage = language
         } else {
             // 根据系统语言自动选择
-            let systemLanguage: String
-            if #available(iOS 16.0, *) {
-                systemLanguage = Locale.current.language.languageCode?.identifier ?? "en"
-            } else {
-                // iOS 15 回退：从首选语言列表中取首项并解析语言码（如 "zh-Hans-CN" -> "zh"）
-                let preferred = Locale.preferredLanguages.first ?? "en"
-                let prefix = preferred.split(separator: "-").first.map(String.init) ?? "en"
-                systemLanguage = prefix
-            }
+            let systemLanguage = Locale.current.language.languageCode?.identifier ?? "en"
+            
             switch systemLanguage {
             case "zh":
                 currentLanguage = .chinese
@@ -402,12 +396,27 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
 // SwiftUI扩展，用于简化本地化字符串的使用
 extension Text {
     init(localized key: LocalizedStringKey) {
-        self.init(LocalizationManager.shared.localizedString(key))
+        // For SwiftUI Text, we can safely assume main actor since Text initialization happens on main thread
+        let string = MainActor.assumeIsolated {
+            LocalizationManager.shared.localizedString(key)
+        }
+        self.init(string)
     }
 }
 
 extension String {
-    init(localized key: LocalizedStringKey) {
-        self = LocalizationManager.shared.localizedString(key)
+    nonisolated init(localized key: LocalizedStringKey) {
+        // Safely access main-actor isolated code from any context
+        if Thread.isMainThread {
+            self = MainActor.assumeIsolated {
+                LocalizationManager.shared.localizedString(key)
+            }
+        } else {
+            self = DispatchQueue.main.sync {
+                MainActor.assumeIsolated {
+                    LocalizationManager.shared.localizedString(key)
+                }
+            }
+        }
     }
 }

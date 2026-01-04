@@ -2,51 +2,45 @@ import Foundation
 import CryptoKit
 import Security
 
-final class SecureStorage {
+/// Secure storage using Keychain for the encryption key and UserDefaults for encrypted data.
+/// Modernized to use an actor for thread safety and non-blocking I/O in 2026.
+actor SecureStorage {
     static let shared = SecureStorage()
     private init() {}
 
     private let keychainService = "com.simplenavi.simplenavi.securekey"
     private let keychainAccount = "encryption-key"
     private let userDefaults = UserDefaults.standard
-    private let queue = DispatchQueue(label: "SecureStorageQueue")
 
     // MARK: - Public API
     func setString(_ value: String?, forKey key: String) {
-        queue.sync {
-            guard let value, !value.isEmpty else {
-                userDefaults.removeObject(forKey: key)
-                return
-            }
-            do {
-                let enc = try encrypt(Data(value.utf8))
-                userDefaults.set(enc.base64EncodedString(), forKey: key)
-            } catch {
-                // 失败时不保存密文，避免写入无效数据
-                print("[SecureStorage] Encrypt failed: \(error)")
-            }
+        guard let value, !value.isEmpty else {
+            userDefaults.removeObject(forKey: key)
+            return
+        }
+        do {
+            let enc = try encrypt(Data(value.utf8))
+            userDefaults.set(enc.base64EncodedString(), forKey: key)
+        } catch {
+            print("[SecureStorage] Encrypt failed: \(error)")
         }
     }
 
     func getString(forKey key: String) -> String? {
-        return queue.sync {
-            guard let b64 = userDefaults.string(forKey: key), let data = Data(base64Encoded: b64) else {
-                return nil
-            }
-            do {
-                let dec = try decrypt(data)
-                return String(data: dec, encoding: .utf8)
-            } catch {
-                print("[SecureStorage] Decrypt failed: \(error)")
-                return nil
-            }
+        guard let b64 = userDefaults.string(forKey: key), let data = Data(base64Encoded: b64) else {
+            return nil
+        }
+        do {
+            let dec = try decrypt(data)
+            return String(data: dec, encoding: .utf8)
+        } catch {
+            print("[SecureStorage] Decrypt failed: \(error)")
+            return nil
         }
     }
 
     func remove(forKey key: String) {
-        queue.sync {
-            userDefaults.removeObject(forKey: key)
-        }
+        userDefaults.removeObject(forKey: key)
     }
 
     // MARK: - Crypto

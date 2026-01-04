@@ -15,21 +15,22 @@ struct NaviSnapshot: Codable, Equatable {
 }
 
 /// Lightweight shared store using App Group UserDefaults
-final class SharedDataStore {
+actor SharedDataStore {
     static let appGroupId = "group.com.simplenavi.shared"
     static let shared = SharedDataStore()
 
     private let defaults: UserDefaults?
     private let snapshotKey = "navi.snapshot.json"
-    // 内部串行队列，避免多线程竞争
-    private let queue = DispatchQueue(label: "com.simplenavi.shareddatastore", qos: .utility)
+    
     // 上一次成功写入的快照与时间
     private var lastSnapshot: NaviSnapshot?
     private var lastSaveTime: Date = .distantPast
+    
     // 写入与刷新节流参数（根据体验/能耗折中）
     private let minSaveInterval: TimeInterval = 0.4
     private let distanceEpsilon: Double = 2.0 // 米
     private let bearingEpsilon: Double = 1.0  // 度
+    
     #if canImport(WidgetKit)
     private var lastReloadTime: Date = .distantPast
     private var pendingReload = false
@@ -42,61 +43,63 @@ final class SharedDataStore {
     }
 
     func save(snapshot: NaviSnapshot) {
-        queue.async { [weak self] in
-            guard let self, let defaults = self.defaults else { return }
-            let now = Date()
+        let now = Date()
 
-            // 阈值判断：若变动极小且未到最小保存间隔，则忽略
-            if let last = self.lastSnapshot {
-                let distDiff = abs(snapshot.distanceMeters - last.distanceMeters)
-                // 角度差归一化到 [-180, 180]
-                var bearingDiff = snapshot.bearingRelToDevice - last.bearingRelToDevice
-                bearingDiff = bearingDiff.truncatingRemainder(dividingBy: 360)
-                if bearingDiff > 180 { bearingDiff -= 360 }
-                if bearingDiff < -180 { bearingDiff += 360 }
-                let isSameSlot = snapshot.slot == last.slot
-                let isSameLabel = snapshot.destinationLabel == last.destinationLabel
-                let trivialChange = distDiff < self.distanceEpsilon && abs(bearingDiff) < self.bearingEpsilon && isSameSlot && isSameLabel
-                if trivialChange && now.timeIntervalSince(self.lastSaveTime) < self.minSaveInterval {
-                    return
-                }
+        // 阈值判断：若变动极小且未到最小保存间隔，则忽略
+        if let last = self.lastSnapshot {
+            let distDiff = abs(snapshot.distanceMeters - last.distanceMeters)
+            // 角度差归一化到 [-180, 180]
+            var bearingDiff = snapshot.bearingRelToDevice - last.bearingRelToDevice
+            bearingDiff = bearingDiff.truncatingRemainder(dividingBy: 360)
+            if bearingDiff > 180 { bearingDiff -= 360 }
+            if bearingDiff < -180 { bearingDiff += 360 }
+            let isSameSlot = snapshot.slot == last.slot
+            let isSameLabel = snapshot.destinationLabel == last.destinationLabel
+            let trivialChange = distDiff < self.distanceEpsilon && abs(bearingDiff) < self.bearingEpsilon && isSameSlot && isSameLabel
+            if trivialChange && now.timeIntervalSince(self.lastSaveTime) < self.minSaveInterval {
+                return
             }
-
-            do {
-                let encoder = JSONEncoder()
-                // 日期编码保持默认（精简开销即可）
-                let data = try encoder.encode(snapshot)
-                defaults.set(data, forKey: self.snapshotKey)
-                self.lastSnapshot = snapshot
-                self.lastSaveTime = now
-            } catch {
-                os_log("SharedDataStore encode error: %{public}@", String(describing: error))
-            }
-
-            // 节流刷新：仅刷新本 Widget 的时间线，并做 2s 合并
-            #if canImport(WidgetKit)
-            if #available(iOS 14.0, *) {
-                let since = now.timeIntervalSince(self.lastReloadTime)
-                if since >= self.minReloadInterval {
-                    self.lastReloadTime = now
-                    WidgetCenter.shared.reloadTimelines(ofKind: self.widgetKind)
-                } else if !self.pendingReload {
-                    self.pendingReload = true
-                    let delay = max(0.25, self.minReloadInterval - since)
-                    self.queue.asyncAfter(deadline: .now() + delay) { [weak self] in
-                        guard let self else { return }
-                        self.pendingReload = false
-                        self.lastReloadTime = Date()
-                        WidgetCenter.shared.reloadTimelines(ofKind: self.widgetKind)
-                    }
-                }
-            }
-            #endif
         }
+
+        do {
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(snapshot)
+            defaults?.set(data, forKey: self.snapshotKey)
+            self.lastSnapshot = snapshot
+            self.lastSaveTime = now
+        } catch {
+            os_log("SharedDataStore encode error: %{public}@", String(describing: error))
+        }
+
+        // 节流刷新：仅刷新本 Widget 的时间线，并做 2s 合并
+        #if canImport(WidgetKit)
+        if #available(iOS 14.0, *) {
+            let since = now.timeIntervalSince(self.lastReloadTime)
+            if since >= self.minReloadInterval {
+                self.lastReloadTime = now
+                WidgetCenter.shared.reloadTimelines(ofKind: self.widgetKind)
+            } else if !self.pendingReload {
+                self.pendingReload = true
+                let delay = max(0.25, self.minReloadInterval - since)
+                Task {
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    await self.performReload()
+                }
+            }
+        }
+        #endif
     }
+    
+    #if canImport(WidgetKit)
+    private func performReload() {
+        self.pendingReload = false
+        self.lastReloadTime = Date()
+        WidgetCenter.shared.reloadTimelines(ofKind: self.widgetKind)
+    }
+    #endif
 
     func load() -> NaviSnapshot? {
-        guard let defaults, let data = defaults.data(forKey: snapshotKey) else { return nil }
+        guard let defaults = self.defaults, let data = defaults.data(forKey: snapshotKey) else { return nil }
         return try? JSONDecoder().decode(NaviSnapshot.self, from: data)
     }
 }

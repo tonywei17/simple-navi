@@ -39,22 +39,22 @@ enum AddressLabelStore {
         }
     }
 
-    static func load(slot: Int) -> String {
+    static func load(slot: Int) async -> String {
         let key = key(for: slot)
-        if let value = SecureStorage.shared.getString(forKey: key)?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty {
+        if let value = await SecureStorage.shared.getString(forKey: key)?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty {
             return value
         }
         return defaultLabel(for: slot)
     }
 
-    static func save(_ label: String, slot: Int) {
+    static func save(_ label: String, slot: Int) async {
         let key = key(for: slot)
         let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
         let defaultValue = defaultLabel(for: slot)
         if trimmed.isEmpty || trimmed == defaultValue {
-            SecureStorage.shared.remove(forKey: key)
+            await SecureStorage.shared.remove(forKey: key)
         } else {
-            SecureStorage.shared.setString(trimmed, forKey: key)
+            await SecureStorage.shared.setString(trimmed, forKey: key)
         }
     }
 }

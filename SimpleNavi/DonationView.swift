@@ -2,6 +2,7 @@ import SwiftUI
 import StoreKit
 
 // MARK: - StoreKit 2 管理器（加载商品、处理购买、监听交易）
+@MainActor
 final class IAPManager: ObservableObject {
     @Published var products: [Product] = []
     @Published var isLoading = false
@@ -15,7 +16,6 @@ final class IAPManager: ObservableObject {
         "com.simplenavi.simplenavi.tip.large"
     ]
 
-    @MainActor
     func loadProducts() async {
         guard !isLoading else { return }
         isLoading = true
@@ -38,9 +38,8 @@ final class IAPManager: ObservableObject {
 
     func startTransactionListener() {
         updatesTask?.cancel()
-        updatesTask = Task.detached { [weak self] in
+        updatesTask = Task {
             for await result in StoreKit.Transaction.updates {
-                guard let self else { continue }
                 do {
                     let transaction: StoreKit.Transaction = try self.checkVerified(result)
                     await transaction.finish()
@@ -59,9 +58,7 @@ final class IAPManager: ObservableObject {
             let transaction: StoreKit.Transaction = try checkVerified(verification)
             await transaction.finish()
             return transaction
-        case .userCancelled:
-            return nil
-        case .pending:
+        case .userCancelled, .pending:
             return nil
         @unknown default:
             return nil
@@ -76,16 +73,24 @@ final class IAPManager: ObservableObject {
             return safe
         }
     }
+    
+    deinit {
+        updatesTask?.cancel()
+    }
 }
 
 struct DonationView: View {
     @Binding var isPresented: Bool
-    @ObservedObject private var localizationManager = LocalizationManager.shared
+    private var localizationManager = LocalizationManager.shared
     @StateObject private var iap = IAPManager()
     @State private var isProcessingPurchase = false
     @State private var showThankYou = false
     @State private var showError = false
     @State private var errorMessage = ""
+    
+    init(isPresented: Binding<Bool>) {
+        self._isPresented = isPresented
+    }
     
     // 商品 ID → UI 展示的映射（使用已存在的本地化文案与配色）
     private func uiForProduct(_ id: String) -> (title: LocalizedStringKey, desc: LocalizedStringKey, icon: String, gradient: LinearGradient) {

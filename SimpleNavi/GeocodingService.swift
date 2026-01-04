@@ -54,36 +54,32 @@ class GeocodingService: ObservableObject {
         "我的家": CLLocationCoordinate2D(latitude: 35.1649, longitude: 136.9280)
     ]
     
-    func geocodeAddress(_ address: String, completion: @escaping (CLLocationCoordinate2D?) -> Void) {
+    // 使用 Swift 并发 (async/await) 进行地理编码
+    func geocodeAddress(_ address: String) async -> CLLocationCoordinate2D? {
         // 使用日本地址管理器进行更智能的地理编码
-        JapaneseAddressManager.shared.geocodeAddress(address) { result in
-            switch result {
-            case .success(let coordinate):
-                completion(coordinate)
-            case .failure:
-                // 如果失败，尝试预设的名古屋地址
-                self.fallbackToPresetAddresses(address, completion: completion)
-            }
+        do {
+            return try await JapaneseAddressManager.shared.geocodeAddress(address)
+        } catch {
+            // 如果失败，尝试预设的名古屋地址
+            return await fallbackToPresetAddresses(address)
         }
     }
     
-    private func fallbackToPresetAddresses(_ address: String, completion: @escaping (CLLocationCoordinate2D?) -> Void) {
+    private func fallbackToPresetAddresses(_ address: String) async -> CLLocationCoordinate2D? {
         // 首先检查是否有预设的名古屋地址
         if let coordinate = nagoyaAddresses[address] {
-            completion(coordinate)
-            return
+            return coordinate
         }
         
         // 检查部分匹配（用于用户输入可能不完整的情况）
         for (key, coordinate) in nagoyaAddresses {
             if key.contains(address) || address.contains(key) {
-                completion(coordinate)
-                return
+                return coordinate
             }
         }
         
         // 如果都没有匹配，返回名古屋市中心作为默认位置
-        completion(CLLocationCoordinate2D(latitude: 35.1815, longitude: 136.9066))
+        return CLLocationCoordinate2D(latitude: 35.1815, longitude: 136.9066)
     }
     
     // 获取建议的名古屋地址列表（用于用户参考）

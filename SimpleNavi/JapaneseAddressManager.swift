@@ -115,46 +115,41 @@ class JapaneseAddressManager: ObservableObject {
         return suggestions.prefix(5).map { $0 }
     }
     
-    // 使用Apple的地理编码服务
-    func geocodeAddress(_ address: String, completion: @escaping (Result<CLLocationCoordinate2D, Error>) -> Void) {
+    // 使用 Swift 并发 (async/await) 进行地理编码
+    func geocodeAddress(_ address: String) async throws -> CLLocationCoordinate2D {
         let geocoder = CLGeocoder()
         let formattedAddress = formatJapaneseAddress(address)
         
-        // 设置日本地区的地理编码
-        geocoder.geocodeAddressString(formattedAddress, completionHandler: { placemarks, error in
-            let block = {
+        // 使用 withCheckedThrowingContinuation 将基于闭包的 API 转换为 async/await
+        return try await withCheckedThrowingContinuation { continuation in
+            geocoder.geocodeAddressString(formattedAddress) { placemarks, error in
                 if let error = error {
-                    completion(.failure(error))
+                    continuation.resume(throwing: error)
                     return
                 }
                 guard let placemark = placemarks?.first,
                       let location = placemark.location else {
-                    completion(.failure(GeocodingError.noResults))
+                    continuation.resume(throwing: GeocodingError.noResults)
                     return
                 }
-                completion(.success(location.coordinate))
+                continuation.resume(returning: location.coordinate)
             }
-            if Thread.isMainThread {
-                block()
-            } else {
-                DispatchQueue.main.async(execute: block)
-            }
-        })
+        }
     }
     
     // 反向地理编码（从坐标获取地址）- 全球适用
-    func reverseGeocodeCoordinate(_ coordinate: CLLocationCoordinate2D, completion: @escaping (Result<String, Error>) -> Void) {
+    func reverseGeocodeCoordinate(_ coordinate: CLLocationCoordinate2D) async throws -> String {
         let geocoder = CLGeocoder()
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
 
-        geocoder.reverseGeocodeLocation(location, completionHandler: { placemarks, error in
-            let block = {
+        return try await withCheckedThrowingContinuation { continuation in
+            geocoder.reverseGeocodeLocation(location) { placemarks, error in
                 if let error = error {
-                    completion(.failure(error))
+                    continuation.resume(throwing: error)
                     return
                 }
                 guard let placemark = placemarks?.first else {
-                    completion(.failure(GeocodingError.noResults))
+                    continuation.resume(throwing: GeocodingError.noResults)
                     return
                 }
 
@@ -168,7 +163,7 @@ class JapaneseAddressManager: ObservableObject {
                     formatted = formatted.replacingOccurrences(of: "  ", with: " ")
                     let trimmed = formatted.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmed.isEmpty {
-                        completion(.success(trimmed))
+                        continuation.resume(returning: trimmed)
                         return
                     }
                 }
@@ -199,11 +194,9 @@ class JapaneseAddressManager: ObservableObject {
                             parts.append(placemark.thoroughfare!)
                         }
                     } else if let name = placemark.name, !name.isEmpty {
-                        // 当没有明确的街道字段时，使用 name（通常为 POI 名称或“号+街道”组合）
                         parts.append(name)
                     }
 
-                    // 城市/区县（在中国等地区，locality 可能为空，使用 subAdministrativeArea 或 subLocality）
                     if let locality = placemark.locality, !locality.isEmpty { parts.append(locality) }
                     if let subAdmin = placemark.subAdministrativeArea, !subAdmin.isEmpty, !parts.contains(subAdmin) { parts.append(subAdmin) }
                     if let subLocality = placemark.subLocality, !subLocality.isEmpty, !parts.contains(subLocality) { parts.append(subLocality) }
@@ -215,65 +208,25 @@ class JapaneseAddressManager: ObservableObject {
 
                 let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty {
-                    completion(.success(trimmed))
+                    continuation.resume(returning: trimmed)
                     return
                 }
 
-                // 进一步兜底：先尝试 placemark 的 name/areasOfInterest，再做 POI 搜索
+                // 进一步兜底
                 if let name = placemark.name, !name.isEmpty {
                     let composed = [name, placemark.locality, placemark.administrativeArea, placemark.country]
                         .compactMap { $0 }
                         .filter { !$0.isEmpty }
                         .joined(separator: ", ")
                     if !composed.isEmpty {
-                        completion(.success(composed))
+                        continuation.resume(returning: composed)
                         return
                     }
                 }
-                if let aoi = placemark.areasOfInterest?.first, !aoi.isEmpty {
-                    let composed = [aoi, placemark.locality, placemark.administrativeArea, placemark.country]
-                        .compactMap { $0 }
-                        .filter { !$0.isEmpty }
-                        .joined(separator: ", ")
-                    if !composed.isEmpty {
-                        completion(.success(composed))
-                        return
-                    }
-                }
-
-                // 最后使用 POI 搜索（机场/公共交通优先），如仍失败则用 placemark.title
-                if #available(iOS 14.0, *) {
-                    let poiRequest = MKLocalPointsOfInterestRequest(center: coordinate, radius: 8000)
-                    poiRequest.pointOfInterestFilter = MKPointOfInterestFilter(including: [.airport, .publicTransport])
-                    let poiSearch = MKLocalSearch(request: poiRequest)
-                    poiSearch.start { resp, _ in
-                        if let items = resp?.mapItems, let item = items.min(by: { $0.placemark.coordinateDistance(to: coordinate) < $1.placemark.coordinateDistance(to: coordinate) }) {
-                            let p = item.placemark
-                            var parts: [String] = []
-                            parts.append(item.name ?? "")
-                            if let locality = p.locality, !locality.isEmpty { parts.append(locality) }
-                            if let admin = p.administrativeArea, !admin.isEmpty { parts.append(admin) }
-                            if let country = p.country, !country.isEmpty { parts.append(country) }
-                            let composed = parts.filter { !$0.isEmpty }.joined(separator: ", ")
-                            if !composed.isEmpty {
-                                completion(.success(composed))
-                                return
-                            }
-                        }
-                        // 再退一步：无合适 POI，返回无结果，让上层使用经纬度兜底
-                        completion(.failure(GeocodingError.noResults))
-                    }
-                } else {
-                    // iOS 13 及以下：无 CNPostalAddress/POI 时，返回无结果，让上层兜底
-                    completion(.failure(GeocodingError.noResults))
-                }
+                
+                continuation.resume(throwing: GeocodingError.noResults)
             }
-            if Thread.isMainThread {
-                block()
-            } else {
-                DispatchQueue.main.async(execute: block)
-            }
-        })
+        }
     }
 
 }
@@ -289,8 +242,8 @@ private extension MKPlacemark {
 
 // Keep landmark search as a type member via extension
 extension JapaneseAddressManager {
-    // 搜索附近的地标
-    func searchNearbyLandmarks(coordinate: CLLocationCoordinate2D, completion: @escaping ([MKMapItem]) -> Void) {
+    // 搜索附近的地标 - 异步版本
+    func searchNearbyLandmarks(coordinate: CLLocationCoordinate2D) async -> [MKMapItem] {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = "駅 コンビニ 病院 学校"
         request.region = MKCoordinateRegion(
@@ -300,15 +253,11 @@ extension JapaneseAddressManager {
         )
         
         let search = MKLocalSearch(request: request)
-        search.start { response, error in
-            let block = {
-                completion(response?.mapItems ?? [])
-            }
-            if Thread.isMainThread {
-                block()
-            } else {
-                DispatchQueue.main.async(execute: block)
-            }
+        do {
+            let response = try await search.start()
+            return response.mapItems
+        } catch {
+            return []
         }
     }
 }

@@ -2,11 +2,14 @@ import SwiftUI
 import UIKit
 
 struct LanguageSelectionView: View {
-    @ObservedObject private var localizationManager = LocalizationManager.shared
+    private var localizationManager = LocalizationManager.shared
     @Binding var isPresented: Bool
 
+    init(isPresented: Binding<Bool>) {
+        self._isPresented = isPresented
+    }
+
     var body: some View {
-        // 顶层使用 ZStack 铺满渐变，确保标题 inset 区域下也有同样的背景
         ZStack {
             LinearGradient(
                 colors: [Color.blue.opacity(0.1), Color.green.opacity(0.05)],
@@ -15,71 +18,69 @@ struct LanguageSelectionView: View {
             )
             .ignoresSafeArea()
 
-            content
-                .safeAreaInset(edge: .top) {
-                    headerView
-                        .padding(.top, 12)
+            VStack(spacing: 20) {
+                headerView
+                    .padding(.top, 24)
+                
+                ScrollView {
+                    VStack(spacing: 16) {
+                        ForEach(SupportedLanguage.allCases, id: \.self) { language in
+                            languageOption(language)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
                 }
+
+                Spacer()
+
+                doneButton
+            }
         }
     }
     
-    // MARK: - Content
-    @ViewBuilder
-    private var content: some View {
-        VStack(spacing: 20) {
-            // 语言选项
-            VStack(spacing: 16) {
-                ForEach(SupportedLanguage.allCases, id: \.self) { language in
-                    languageOption(language)
-                }
+    private var doneButton: some View {
+        Button(action: {
+            isPresented = false
+        }) {
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 20))
+                Text(localized: .done)
+                    .font(.system(size: 18, weight: .semibold))
             }
-            .padding(.horizontal, 20)
-
-            Spacer()
-
-            // 完成按钮
-            Button(action: {
-                isPresented = false
-            }) {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 20))
-                    Text(localized: .done)
-                        .font(.system(size: 18, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(
-                    LinearGradient(
-                        colors: [.blue, .green],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(
+                LinearGradient(
+                    colors: [.blue, .green],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .blue.opacity(0.2), radius: 8, x: 0, y: 4)
         }
-        // 背景已移至顶层 ZStack，避免在不同容器层产生叠加灰阶
+        .padding(.horizontal, 20)
+        .padding(.bottom, 24)
     }
+
     private func languageOption(_ language: SupportedLanguage) -> some View {
         Button(action: {
-            localizationManager.currentLanguage = language
+            Task { @MainActor in
+                localizationManager.currentLanguage = language
+            }
         }) {
             HStack(spacing: 16) {
-                // 国旗
                 Text(language.flag)
                     .font(.system(size: 32))
                 
-                // 语言名称
                 VStack(alignment: .leading, spacing: 4) {
                     Text(language.displayName)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.primary)
                     
-                    // 显示语言的本地化名称
                     Text(getLanguageNativeName(language))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
@@ -87,7 +88,6 @@ struct LanguageSelectionView: View {
                 
                 Spacer()
                 
-                // 选中状态
                 if localizationManager.currentLanguage == language {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 24))

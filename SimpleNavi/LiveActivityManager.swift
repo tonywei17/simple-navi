@@ -5,12 +5,13 @@ import ActivityKit
 #endif
 
 /// Manages the lifecycle of the SimpleNavi Live Activity (Dynamic Island)
+/// Modernized for 2026 standards with @MainActor.
+@MainActor
 final class LiveActivityManager {
     static let shared = LiveActivityManager()
     // 全局开关：禁用灵动岛/Live Activity 时置为 false
     private let isEnabled = false
 
-    // Use an untyped storage to avoid @available on stored properties with lower deployment targets
     #if canImport(ActivityKit)
     private var anyActivity: Any?
     #endif
@@ -77,7 +78,9 @@ final class LiveActivityManager {
                 displayBearing: lastDisplay ?? bearingRelToDevice,
                 lastUpdated: now
             )
-            Task { await activity.update(using: state) }
+            Task {
+                await activity.update(using: state)
+            }
         }
         #endif
     }
@@ -86,7 +89,9 @@ final class LiveActivityManager {
         guard isEnabled else { return }
         #if canImport(ActivityKit)
         if #available(iOS 16.1, *), let activity = anyActivity as? Activity<SimpleNaviActivityAttributes> {
-            Task { await activity.end(dismissalPolicy: .immediate) }
+            Task {
+                await activity.end(dismissalPolicy: .immediate)
+            }
             self.anyActivity = nil
         }
         #endif
