@@ -32,6 +32,8 @@ class CompassViewModel {
     // 2026 Advanced Features
     var triggerAlignmentFeedback: Bool = false
     var isAssistiveAccessEnabled: Bool = false
+    var displayHeading: Double = 0
+    private var hasInitializedRotation = false
     
     // Cached slot addresses for sync access in UI
     var slotAddresses: [String] = ["", "", ""]
@@ -63,11 +65,26 @@ class CompassViewModel {
         
         locationManager.$currentHeading
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
+            .sink { [weak self] newValue in
+                self?.updateDisplayHeading(newValue)
                 self?.updateArrowRotation()
                 self?.schedulePublish()
             }
             .store(in: &cancellables)
+    }
+    
+    private func updateDisplayHeading(_ newHeading: Double) {
+        if !hasInitializedRotation {
+            displayHeading = newHeading
+            // Initial initialization of arrow rotation too to avoid startup jump
+            let target = angle - newHeading
+            arrowRotation = target
+            hasInitializedRotation = true
+            return
+        }
+        
+        let diff = wrapDelta(newHeading - (displayHeading.truncatingRemainder(dividingBy: 360)))
+        displayHeading += diff
     }
     
     func onAppear() {
@@ -119,7 +136,7 @@ class CompassViewModel {
                 newSlotAddresses[slot] = addr
                 
                 let latKey = slot == 0 ? UDKeys.address1Lat : slot == 1 ? UDKeys.address2Lat : UDKeys.address3Lat
-                let lonKey = slot == 0 ? UDKeys.address1Lon : slot == 1 ? UDKeys.address1Lon : UDKeys.address3Lon
+                let lonKey = slot == 0 ? UDKeys.address1Lon : slot == 1 ? UDKeys.address2Lon : UDKeys.address3Lon
                 
                 let coord: CLLocationCoordinate2D
                 if let latStr = await SecureStorage.shared.getString(forKey: latKey),
@@ -189,28 +206,27 @@ class CompassViewModel {
     
     private func updateArrowRotation() {
         let target = angle - locationManager.currentHeading
-        let diff = wrapDelta(target - arrowRotation)
+        let diff = wrapDelta(target - (arrowRotation.truncatingRemainder(dividingBy: 360)))
         
-        // Trigger haptic feedback if aligned (within 5 degrees)
-        // Only trigger once when entering the alignment zone
-        let threshold = 5.0
-        if abs(wrapDelta(target)) < threshold && abs(wrapDelta(target - arrowRotation)) > 0.5 {
+        arrowRotation += diff
+        
+        // Trigger haptic feedback if aligned (within 2 degrees of top)
+        let threshold = 2.0
+        let currentRelativeAngle = abs(wrapDelta(target))
+        if currentRelativeAngle < threshold {
             if !triggerAlignmentFeedback {
                 triggerAlignmentFeedback = true
-                // Reset after a short delay to allow re-triggering if user moves away and back
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                // Feedback is triggered in View via sensoryFeedback
+                
+                // Auto-reset after a short delay to allow re-triggering
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     self.triggerAlignmentFeedback = false
                 }
             }
-        }
-
-        if abs(diff) < angleEpsilon { return }
-        
-        if isSpinning {
-            arrowRotation += diff
         } else {
-            withAnimation(.linear(duration: arrowAnimDuration)) {
-                arrowRotation += diff
+            // Reset if moved out of the alignment zone
+            if triggerAlignmentFeedback {
+                triggerAlignmentFeedback = false
             }
         }
     }
