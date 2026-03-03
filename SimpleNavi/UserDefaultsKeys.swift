@@ -22,12 +22,17 @@ enum UDKeys {
     static let address3Label = "address3Label"
 }
 
+/// AddressLabelStore uses **1-based** slot indexing (1, 2, 3).
+/// CompassViewModel.Destination.slot uses 0-based (0, 1, 2).
 enum AddressLabelStore {
     static func key(for slot: Int) -> String {
         switch slot {
         case 1: return UDKeys.address1Label
         case 2: return UDKeys.address2Label
-        default: return UDKeys.address3Label
+        case 3: return UDKeys.address3Label
+        default:
+            assertionFailure("AddressLabelStore uses 1-based slot indexing (1-3), got \(slot)")
+            return UDKeys.address3Label
         }
     }
 

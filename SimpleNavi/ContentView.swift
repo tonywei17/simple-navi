@@ -1,30 +1,36 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var isFirstLaunch = true
+    @State private var isFirstLaunch: Bool
     @State private var showSettings = false
-    
-    var body: some View {
-        Group {
-            if isFirstLaunch {
-                // 首次进入使用 SetupView（无返回按钮）
-                SetupView(isFirstLaunch: $isFirstLaunch, showSettings: $showSettings)
-            } else {
-                // 主页面
-                CompassView(showSettings: $showSettings)
-            }
-        }
-        // 从主页面进入设置：以全屏弹出，避免与顶部导航、滚动层交互冲突
-        .fullScreenCover(isPresented: $showSettings) {
-            SetupView(isFirstLaunch: $isFirstLaunch, showSettings: $showSettings)
-        }
-        .onAppear {
-            checkFirstLaunch()
-        }
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    init() {
+        _isFirstLaunch = State(initialValue: !UserDefaults.standard.bool(forKey: UDKeys.hasSetupAddresses))
     }
-    
-    private func checkFirstLaunch() {
-        isFirstLaunch = !UserDefaults.standard.bool(forKey: UDKeys.hasSetupAddresses)
+
+    var body: some View {
+        GeometryReader { geometry in
+            let metrics = LayoutMetrics.resolve(
+                horizontalSizeClass: horizontalSizeClass,
+                verticalSizeClass: verticalSizeClass,
+                screenSize: geometry.size
+            )
+
+            Group {
+                if isFirstLaunch {
+                    SetupView(isFirstLaunch: $isFirstLaunch, showSettings: $showSettings)
+                } else {
+                    CompassView(showSettings: $showSettings)
+                }
+            }
+            .fullScreenCover(isPresented: $showSettings) {
+                SetupView(isFirstLaunch: $isFirstLaunch, showSettings: $showSettings)
+                    .environment(\.layoutMetrics, metrics)
+            }
+            .environment(\.layoutMetrics, metrics)
+        }
     }
 }
 

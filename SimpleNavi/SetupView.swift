@@ -73,21 +73,21 @@ struct LanguagePickerButton: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(Color.blue.opacity(0.1))
+                    .fill(DesignTokens.accent.opacity(0.12))
             )
         }
-        .foregroundColor(.blue)
+        .foregroundColor(DesignTokens.accent)
     }
 }
 
 struct SetupView: View {
     @Binding var isFirstLaunch: Bool
     @Binding var showSettings: Bool
-    
+
     private var localizationManager = LocalizationManager.shared
+    @Environment(\.layoutMetrics) private var metrics
     @State private var showLanguageSheet = false
-    
-    // 使用加密存储替代明文 @AppStorage
+
     @State private var address1 = ""
     @State private var address2 = ""
     @State private var address3 = ""
@@ -111,16 +111,16 @@ struct SetupView: View {
                     
                     LinearGradient(
                         colors: [
-                            Color.blue.opacity(0.12),
-                            Color.green.opacity(0.08),
+                            DesignTokens.bgGradientStart,
+                            DesignTokens.bgGradientMiddle,
                             Color.clear
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
-                    
+
                     Circle()
-                        .fill(Color.orange.opacity(0.05))
+                        .fill(DesignTokens.bgAmbient)
                         .frame(width: 400, height: 400)
                         .blur(radius: 60)
                         .offset(x: -150, y: -200)
@@ -128,114 +128,63 @@ struct SetupView: View {
                 .ignoresSafeArea()
                 
                 ScrollView {
-                    VStack(spacing: 30) {
+                    VStack(spacing: metrics.sectionSpacing) {
                         // 顶部返回按钮（非首次启动才显示）
                         HStack {
                             if !isFirstLaunch {
                                 Button(action: { showSettings = false }) {
                                     HStack(spacing: 8) {
                                         Image(systemName: "chevron.left")
-                                            .font(.system(size: 20, weight: .bold))
+                                            .font(.system(size: metrics.captionFontSize, weight: .bold))
                                         Text(localized: .back)
-                                            .font(.system(size: 20, weight: .bold))
+                                            .font(.system(size: metrics.captionFontSize, weight: .bold))
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
                                     .background(
                                         RoundedRectangle(cornerRadius: 14)
-                                            .fill(Color.blue.opacity(0.1))
+                                            .fill(DesignTokens.accent.opacity(0.12))
                                     )
                                 }
-                                .foregroundColor(.blue)
+                                .foregroundColor(DesignTokens.accent)
                             }
                             Spacer()
-                            // 语言选择按钮（首次进入或设置页均显示）
                             LanguagePickerButton(action: { showLanguageSheet = true })
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, metrics.horizontalMargin)
+
                         // 顶部标题卡片
                         VStack(spacing: 20) {
                             Image(systemName: "location.circle.fill")
-                                .font(.system(size: 80))
+                                .font(.system(size: metrics.isIPad ? 100 : 80))
                                 .foregroundStyle(
                                     LinearGradient(
-                                        colors: [.blue, .purple],
+                                        colors: [DesignTokens.accent, DesignTokens.accentDeep],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
                                 )
-                                .shadow(color: .blue.opacity(0.2), radius: 15)
-                            
+                                .shadow(color: DesignTokens.accent.opacity(0.25), radius: 15)
+
                             VStack(spacing: 8) {
                                 Text(localized: .setupTitle)
-                                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                                
+                                    .font(.system(size: metrics.titleFontSize, weight: .bold, design: .rounded))
+
                                 Text(localized: .setupSubtitle)
-                                    .font(.system(size: 20, weight: .bold))
-                                    .foregroundColor(.secondary)
+                                    .font(.system(size: metrics.captionFontSize, weight: .bold))
+                                    .foregroundColor(DesignTokens.textSecondary)
                                     .multilineTextAlignment(.center)
                             }
                         }
                         .padding(.vertical, 32)
                         .frame(maxWidth: .infinity)
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                                .stroke(.white.opacity(0.5), lineWidth: 1)
-                        )
-                        .padding(.horizontal, 20)
+                        .glassCard(cornerRadius: 32)
+                        .padding(.horizontal, metrics.horizontalMargin)
                         .padding(.top, 12)
-            
-                        // 地址输入卡片
-                        VStack(spacing: 20) {
-                            // Siri Tip - 引导用户使用 Siri 开启导航 (2026 Apple Intelligence 最佳实践)
-                            // 暂时隐藏 Siri 提示
-                            // if #available(iOS 18.0, *) {
-                            //     SiriTipView(intent: StartNavigationIntent())
-                            //         .padding(.bottom, 8)
-                            // }
 
-                            ModernAddressInputField(
-                                icon: "house.fill",
-                                iconColor: .blue,
-                                label: Binding(get: { label1 }, set: { label1 = $0 }),
-                                labelPlaceholder: AddressLabelStore.defaultLabel(for: 1),
-                                address: $address1,
-                                placeholder: String(localized: .enterHomeAddress),
-                                isRequired: true,
-                                slot: 1,
-                                onTapInside: { skipKeyboardDismissTap = true }
-                            )
-                            
-                            ModernAddressInputField(
-                                icon: "building.2.fill",
-                                iconColor: .orange,
-                                label: Binding(get: { label2 }, set: { label2 = $0 }),
-                                labelPlaceholder: AddressLabelStore.defaultLabel(for: 2),
-                                address: $address2,
-                                placeholder: String(localized: .enterWorkAddress),
-                                isRequired: false,
-                                slot: 2,
-                                onTapInside: { skipKeyboardDismissTap = true }
-                            )
-                            
-                            ModernAddressInputField(
-                                icon: "heart.fill",
-                                iconColor: .pink,
-                                label: Binding(get: { label3 }, set: { label3 = $0 }),
-                                labelPlaceholder: AddressLabelStore.defaultLabel(for: 3),
-                                address: $address3,
-                                placeholder: String(localized: .enterOtherAddress),
-                                isRequired: false,
-                                slot: 3,
-                                onTapInside: { skipKeyboardDismissTap = true }
-                            )
-                        }
-                        .padding(.horizontal, 20)
-            
-                        
-                        
+                        // 地址输入卡片
+                        addressInputSection
+
                         // 现代化保存按钮
                         Button(action: saveAddresses) {
                             HStack(spacing: 12) {
@@ -245,14 +194,14 @@ struct SetupView: View {
                                         .scaleEffect(0.8)
                                 } else {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 24, weight: .bold))
+                                        .font(.system(size: metrics.bodyFontSize, weight: .bold))
                                     Text(localized: .saveSettings)
-                                        .font(.system(size: 24, weight: .bold))
+                                        .font(.system(size: metrics.bodyFontSize, weight: .bold))
                                 }
                             }
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 56)
+                            .frame(height: metrics.buttonHeight)
                             .background(
                                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                                     .fill(
@@ -260,16 +209,16 @@ struct SetupView: View {
                                         ? AnyShapeStyle(Color.gray.opacity(0.3))
                                         : AnyShapeStyle(
                                             LinearGradient(
-                                                colors: [.blue, .purple],
+                                                colors: [DesignTokens.accent, DesignTokens.accentDeep],
                                                 startPoint: .leading,
                                                 endPoint: .trailing
                                             )
                                         )
                                     )
                                     .shadow(
-                                        color: address1.isEmpty || isLoading 
-                                        ? .clear 
-                                        : .blue.opacity(0.2), 
+                                        color: address1.isEmpty || isLoading
+                                        ? .clear
+                                        : DesignTokens.accent.opacity(0.25),
                                         radius: 12, x: 0, y: 6
                                     )
                             )
@@ -278,13 +227,13 @@ struct SetupView: View {
                             .animation(.easeInOut(duration: 0.2), value: isLoading)
                         }
                         .disabled(address1.isEmpty || isLoading)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, metrics.horizontalMargin)
                         .padding(.bottom, 20)
-                        
-                        // 底部间距
-                        Color.clear
-                            .frame(height: 30)
+
+                        Color.clear.frame(height: 30)
                     }
+                    .frame(maxWidth: metrics.setupContentMaxWidth)
+                    .frame(maxWidth: .infinity)
                 }
                 .fullScreenCover(isPresented: $showLanguageSheet) {
                     LanguageSelectionView(isPresented: $showLanguageSheet)
@@ -303,21 +252,27 @@ struct SetupView: View {
                 var a2 = s2 ?? ""
                 var a3 = s3 ?? ""
                 
-                // 迁移逻辑：如果加密存储为空且 UserDefaults 有旧数据，则迁移并删除旧数据
+                // 迁移逻辑：先写入 SecureStorage → 验证成功 → 再删 UserDefaults
                 if a1.isEmpty, let old = UserDefaults.standard.string(forKey: UDKeys.address1), !old.isEmpty {
                     await SecureStorage.shared.setString(old, forKey: UDKeys.address1)
+                    if let verified = await SecureStorage.shared.getString(forKey: UDKeys.address1), verified == old {
+                        UserDefaults.standard.removeObject(forKey: UDKeys.address1)
+                    }
                     a1 = old
-                    UserDefaults.standard.removeObject(forKey: UDKeys.address1)
                 }
                 if a2.isEmpty, let old = UserDefaults.standard.string(forKey: UDKeys.address2), !old.isEmpty {
                     await SecureStorage.shared.setString(old, forKey: UDKeys.address2)
+                    if let verified = await SecureStorage.shared.getString(forKey: UDKeys.address2), verified == old {
+                        UserDefaults.standard.removeObject(forKey: UDKeys.address2)
+                    }
                     a2 = old
-                    UserDefaults.standard.removeObject(forKey: UDKeys.address2)
                 }
                 if a3.isEmpty, let old = UserDefaults.standard.string(forKey: UDKeys.address3), !old.isEmpty {
                     await SecureStorage.shared.setString(old, forKey: UDKeys.address3)
+                    if let verified = await SecureStorage.shared.getString(forKey: UDKeys.address3), verified == old {
+                        UserDefaults.standard.removeObject(forKey: UDKeys.address3)
+                    }
                     a3 = old
-                    UserDefaults.standard.removeObject(forKey: UDKeys.address3)
                 }
                 
                 let l1 = await AddressLabelStore.load(slot: 1)
@@ -348,6 +303,65 @@ struct SetupView: View {
         }
     }
     
+    // MARK: - Address Input Section (iPad 2-column / iPhone single-column)
+
+    @ViewBuilder
+    private var addressInputSection: some View {
+        let homeField = ModernAddressInputField(
+            icon: "house.fill",
+            iconColor: .blue,
+            label: Binding(get: { label1 }, set: { label1 = $0 }),
+            labelPlaceholder: AddressLabelStore.defaultLabel(for: 1),
+            address: $address1,
+            placeholder: String(localized: .enterHomeAddress),
+            isRequired: true,
+            slot: 1,
+            onTapInside: { skipKeyboardDismissTap = true }
+        )
+
+        let workField = ModernAddressInputField(
+            icon: "building.2.fill",
+            iconColor: .orange,
+            label: Binding(get: { label2 }, set: { label2 = $0 }),
+            labelPlaceholder: AddressLabelStore.defaultLabel(for: 2),
+            address: $address2,
+            placeholder: String(localized: .enterWorkAddress),
+            isRequired: false,
+            slot: 2,
+            onTapInside: { skipKeyboardDismissTap = true }
+        )
+
+        let otherField = ModernAddressInputField(
+            icon: "heart.fill",
+            iconColor: .pink,
+            label: Binding(get: { label3 }, set: { label3 = $0 }),
+            labelPlaceholder: AddressLabelStore.defaultLabel(for: 3),
+            address: $address3,
+            placeholder: String(localized: .enterOtherAddress),
+            isRequired: false,
+            slot: 3,
+            onTapInside: { skipKeyboardDismissTap = true }
+        )
+
+        if metrics.isIPad {
+            VStack(spacing: 20) {
+                homeField
+                HStack(alignment: .top, spacing: 20) {
+                    workField
+                    otherField
+                }
+            }
+            .padding(.horizontal, metrics.horizontalMargin)
+        } else {
+            VStack(spacing: 20) {
+                homeField
+                workField
+                otherField
+            }
+            .padding(.horizontal, metrics.horizontalMargin)
+        }
+    }
+
     private func saveAddresses() {
         isLoading = true
         
@@ -360,10 +374,7 @@ struct SetupView: View {
             await AddressLabelStore.save(label2, slot: 2)
             await AddressLabelStore.save(label3, slot: 3)
             UserDefaults.standard.set(!address1.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, forKey: UDKeys.hasSetupAddresses)
-            
-            // 模拟一个小的延迟以展示加载动画（实际存储很快，但给用户一点反馈感）
-            try? await Task.sleep(nanoseconds: 500_000_000)
-            
+
             await MainActor.run {
                 isLoading = false
                 isFirstLaunch = false
@@ -499,11 +510,11 @@ struct ModernAddressInputField: View {
                     }) {
                         Image(systemName: "map.fill")
                             .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.blue)
+                            .foregroundColor(DesignTokens.accent)
                             .padding(10)
                             .background(
                                 Circle()
-                                    .fill(Color.blue.opacity(0.1))
+                                    .fill(DesignTokens.accent.opacity(0.12))
                             )
                     }
                     .transition(.scale.combined(with: .opacity))
@@ -536,12 +547,12 @@ struct ModernAddressInputField: View {
                 if !address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 16))
+                            .font(.system(size: DesignTokens.statusTextSize))
                             .foregroundColor(.green)
 
                         Text(localized: .addressFormatValid)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.secondary)
+                            .font(.system(size: DesignTokens.statusTextSize, weight: .bold))
+                            .foregroundColor(DesignTokens.textSecondary)
 
                         Spacer()
                     }
@@ -551,13 +562,8 @@ struct ModernAddressInputField: View {
             }
         }
         .padding(24)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(.white.opacity(0.5), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.05), radius: 15, x: 0, y: 5)
+        .glassCard(cornerRadius: 28)
+        .shadow(color: .black.opacity(DesignTokens.shadowOpacity), radius: 15, x: 0, y: 5)
         .sheet(isPresented: $showMapConfirm) {
             AsyncMapConfirmSheet(slot: slot, latKey: latKey, lonKey: lonKey, address: $address, showMapConfirm: $showMapConfirm, confirmedAddress: $confirmedAddress, confirmedCoordinate: $confirmedCoordinate)
         }

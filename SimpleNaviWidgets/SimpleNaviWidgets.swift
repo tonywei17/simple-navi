@@ -111,24 +111,9 @@ struct SimpleNaviWidgets: Widget {
 }
 
 @available(iOS 17.0, *)
-extension ConfigurationAppIntent {
-    fileprivate static var smiley: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "😀"
-        return intent
-    }
-    
-    fileprivate static var starEyes: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "🤩"
-        return intent
-    }
-}
-
-@available(iOS 17.0, *)
 #Preview(as: .systemSmall) {
     SimpleNaviWidgets()
 } timeline: {
-    SimpleEntry(date: .now, configuration: .smiley, distance: 120, bearing: 0)
-    SimpleEntry(date: .now, configuration: .starEyes, distance: 350, bearing: 45)
+    SimpleEntry(date: .now, configuration: ConfigurationAppIntent(), distance: 120, bearing: 0)
+    SimpleEntry(date: .now, configuration: ConfigurationAppIntent(), distance: 350, bearing: 45)
 }

@@ -14,7 +14,7 @@ struct AddressState {
     var centerAddress: String = ""
     var editableAddress: String = ""
     var userEdited: Bool = false
-    var programmaticUpdate: Bool = false
+    var programmaticUpdateCount: Int = 0  // 计数器替代布尔标志，避免竞态条件
 }
 
 // MARK: - Error Types
@@ -44,7 +44,8 @@ struct AddressMapConfirmView: View {
     @Binding var confirmedCoordinate: CLLocationCoordinate2D?
     
     private let addressManager = JapaneseAddressManager.shared
-    
+    @Environment(\.layoutMetrics) private var metrics
+
     // MARK: - State
     @State private var mapState = MapState()
     @State private var addressState = AddressState()
@@ -80,8 +81,8 @@ struct AddressMapConfirmView: View {
                         
                         VStack(alignment: .leading, spacing: 12) {
                             Text(localized: .targetAddress)
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.secondary)
+                                .font(.system(size: DesignTokens.statusTextSize, weight: .bold))
+                                .foregroundColor(DesignTokens.textSecondary)
                             
                             TextField("", text: $addressState.editableAddress, axis: .vertical)
                                 .font(.system(size: 24, weight: .bold, design: .rounded))
@@ -95,18 +96,13 @@ struct AddressMapConfirmView: View {
                                 .accessibilityLabel(String(localized: .targetAddress))
                                 .accessibilityHint("编辑目标地址")
                                 .onChange(of: addressState.editableAddress) { _, _ in
-                                    if !addressState.programmaticUpdate { addressState.userEdited = true }
+                                    if addressState.programmaticUpdateCount == 0 { addressState.userEdited = true }
                                 }
                         }
                     }
-                    .padding(24)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 32, style: .continuous)
-                            .stroke(.white.opacity(0.5), lineWidth: 1)
-                    )
-                    .padding(.horizontal, 20)
+                    .padding(metrics.cardPadding)
+                    .glassCard(cornerRadius: 32)
+                    .padding(.horizontal, metrics.horizontalMargin)
                     .padding(.top, 20)
                     
                     // 地图区域
@@ -114,14 +110,14 @@ struct AddressMapConfirmView: View {
                         Map(position: $mapState.position, interactionModes: .all) {
                         }
                         .mapStyle(.standard(elevation: .flat))
-                        .frame(minHeight: 250, maxHeight: 350)
-                        .aspectRatio(1.1, contentMode: .fit)
+                        .frame(minHeight: metrics.mapMinHeight, maxHeight: metrics.mapMaxHeight)
+                        .aspectRatio(metrics.mapAspectRatio, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                                .stroke(.white.opacity(0.5), lineWidth: 1)
+                                .stroke(DesignTokens.accent.opacity(0.25), lineWidth: 1)
                         )
-                        .shadow(color: .black.opacity(0.05), radius: 15, x: 0, y: 10)
+                        .shadow(color: .black.opacity(DesignTokens.shadowOpacity), radius: 15, x: 0, y: 10)
 
                         // 固定在屏幕中心的标记
                         ZStack {
@@ -139,12 +135,12 @@ struct AddressMapConfirmView: View {
                                 .overlay(ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)).scaleEffect(1.2))
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, metrics.horizontalMargin)
                     
                     if let errorMessage = errorMessage {
                         HStack(spacing: 8) {
                             Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
-                            Text(errorMessage).font(.system(size: 14, weight: .medium)).foregroundColor(.orange)
+                            Text(errorMessage).font(.system(size: DesignTokens.minimumReadableSize, weight: .bold)).foregroundColor(.orange)
                         }
                         .padding(.horizontal, 24)
                     }
@@ -155,7 +151,7 @@ struct AddressMapConfirmView: View {
                 ZStack {
                     Color(uiColor: .systemGroupedBackground)
                     LinearGradient(
-                        colors: [Color.blue.opacity(0.05), Color.clear],
+                        colors: [DesignTokens.bgGradientStart, Color.clear],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -181,8 +177,8 @@ struct AddressMapConfirmView: View {
                         .frame(height: 72)
                         .background(
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(mapState.selectedCoordinate != nil ? AnyShapeStyle(LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing)) : AnyShapeStyle(Color.gray.opacity(0.3)))
-                                .shadow(color: mapState.selectedCoordinate != nil ? .blue.opacity(0.2) : .clear, radius: 10, x: 0, y: 5)
+                                .fill(mapState.selectedCoordinate != nil ? AnyShapeStyle(LinearGradient(colors: [DesignTokens.accent, DesignTokens.accentDeep], startPoint: .leading, endPoint: .trailing)) : AnyShapeStyle(Color.gray.opacity(0.3)))
+                                .shadow(color: mapState.selectedCoordinate != nil ? DesignTokens.accent.opacity(0.25) : .clear, radius: 10, x: 0, y: 5)
                         )
                     }
                     .disabled(mapState.selectedCoordinate == nil || mapState.isLoading)
@@ -192,7 +188,7 @@ struct AddressMapConfirmView: View {
                     Button(action: { isPresented = false }) {
                         Text(localized: .cancel)
                             .font(.system(size: 22, weight: .bold, design: .rounded))
-                            .foregroundColor(.primary.opacity(0.7))
+                            .foregroundColor(.primary.opacity(0.85))
                             .frame(maxWidth: .infinity)
                             .frame(height: 64)
                             .background(
@@ -201,10 +197,12 @@ struct AddressMapConfirmView: View {
                             )
                     }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, metrics.horizontalMargin)
                 .padding(.top, 20)
-                .padding(.bottom, 8) 
-                .background(.ultraThinMaterial)
+                .padding(.bottom, 8)
+                .frame(maxWidth: metrics.setupContentMaxWidth)
+                .frame(maxWidth: .infinity)
+                .background(.thinMaterial)
                 .overlay(
                     VStack {
                         Divider().opacity(0.5)
@@ -376,11 +374,10 @@ struct AddressMapConfirmView: View {
     }
 
     private func setEditableAddressProgrammatically(_ value: String) {
-        addressState.programmaticUpdate = true
+        addressState.programmaticUpdateCount += 1
         addressState.editableAddress = value
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(100))
-            addressState.programmaticUpdate = false
+            addressState.programmaticUpdateCount -= 1
         }
     }
 

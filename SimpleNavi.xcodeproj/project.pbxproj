@@ -39,6 +39,10 @@
 		1E30B2B62E8FE0BF00F0F209 /* SimpleNaviWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1E30B2A02E8FE0BE00F0F209 /* SimpleNaviWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1E30B2CB2E8FE28000F0F209 /* LiveActivityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E30B2A100000000000000A2 /* LiveActivityModels.swift */; };
 		1E30B2CC2E8FE29700F0F209 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E30B2A200000000000000A3 /* LiveActivityManager.swift */; };
+		2A2A2A012A2A2A01 /* GlassCardModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A2A2A002A2A2A00 /* GlassCardModifier.swift */; };
+		2A2A2A032A2A2A03 /* LayoutMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A2A2A022A2A2A02 /* LayoutMetrics.swift */; };
+		2A2A2A112A2A2A11 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A2A2A102A2A2A10 /* DesignTokens.swift */; };
+		3A3A3A013A3A3A01 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 3A3A3A003A3A3A00 /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,6 +105,12 @@
 		1E30B2A02E8FE0BE00F0F209 /* SimpleNaviWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SimpleNaviWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		1E30B2A100000000000000A2 /* LiveActivityModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityModels.swift; sourceTree = "<group>"; };
 		1E30B2A200000000000000A3 /* LiveActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityManager.swift; sourceTree = "<group>"; };
+		2A2A2A002A2A2A00 /* GlassCardModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCardModifier.swift; sourceTree = "<group>"; };
+		2A2A2A022A2A2A02 /* LayoutMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutMetrics.swift; sourceTree = "<group>"; };
+		2A2A2A102A2A2A10 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+		3A3A3A023A3A3A02 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		3A3A3A033A3A3A03 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		3A3A3A043A3A3A04 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1E30B2A22E8FE0BE00F0F209 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		1E30B2A42E8FE0BE00F0F209 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		1E30B2BC2E8FE12700F0F209 /* SimpleNaviWidgetsExtensionDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SimpleNaviWidgetsExtensionDebug.entitlements; sourceTree = "<group>"; };
@@ -194,6 +204,10 @@
 				1A1A1A3B1A1A1A3B /* Coordinates.swift */,
 				1A1A1A3D1A1A1A3D /* UserDefaultsKeys.swift */,
 				1A1A1A3E1A1A1A3E /* SecureStorage.swift */,
+				2A2A2A002A2A2A00 /* GlassCardModifier.swift */,
+				2A2A2A022A2A2A02 /* LayoutMetrics.swift */,
+				2A2A2A102A2A2A10 /* DesignTokens.swift */,
+				3A3A3A003A3A3A00 /* InfoPlist.strings */,
 				1A1A1A1D1A1A1A1D /* Assets.xcassets */,
 				1A1A1A1F1A1A1A1F /* Preview Content */,
 			);
@@ -332,6 +346,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3A3A3A013A3A3A01 /* InfoPlist.strings in Resources */,
 				1A1A1A211A1A1A21 /* Preview Assets.xcassets in Resources */,
 				1A1A1A1E1A1A1A1E /* Assets.xcassets in Resources */,
 			);
@@ -378,6 +393,9 @@
 				1E30B2A300000000000000B1 /* SharedDataStore.swift in Sources */,
 				1E30B2A400000000000000B2 /* LiveActivityModels.swift in Sources */,
 				1E30B2A500000000000000B3 /* LiveActivityManager.swift in Sources */,
+				2A2A2A012A2A2A01 /* GlassCardModifier.swift in Sources */,
+				2A2A2A032A2A2A03 /* LayoutMetrics.swift in Sources */,
+				2A2A2A112A2A2A11 /* DesignTokens.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -417,6 +435,19 @@
 			targetProxy = 1E30B2B42E8FE0BF00F0F209 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		3A3A3A003A3A3A00 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				3A3A3A023A3A3A02 /* en */,
+				3A3A3A033A3A3A03 /* zh-Hans */,
+				3A3A3A043A3A3A04 /* ja */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		1A1A1A221A1A1A22 /* Debug */ = {
@@ -551,7 +582,6 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SimpleNavi/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Simple Navigation";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
@@ -564,12 +594,12 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenavi;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -586,7 +616,6 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SimpleNavi/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Simple Navigation";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "简单导航需要获取您的位置来显示回家的方向和距离";
@@ -599,12 +628,12 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenavi;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -668,7 +697,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenavi.SimpleNaviWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -697,7 +726,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simplenavi.simplenavi.SimpleNaviWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

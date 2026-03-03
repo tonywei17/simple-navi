@@ -8,14 +8,40 @@ import Observation
 class CompassViewModel {
     struct Destination: Equatable {
         let address: String
-        let coordinate: CLLocationCoordinate2D
+        let coordinate: CLLocationCoordinate2D?  // nil 表示坐标未设置（避免用 (0,0) 误判赤道坐标）
         let slot: Int // 0, 1, 2
-        
+
         static func == (lhs: Destination, rhs: Destination) -> Bool {
             lhs.address == rhs.address &&
-            lhs.coordinate.latitude == rhs.coordinate.latitude &&
-            lhs.coordinate.longitude == rhs.coordinate.longitude &&
+            lhs.coordinate?.latitude == rhs.coordinate?.latitude &&
+            lhs.coordinate?.longitude == rhs.coordinate?.longitude &&
             lhs.slot == rhs.slot
+        }
+    }
+
+    // MARK: - Slot Key Helpers（消除重复三元运算符）
+
+    private static func addressKey(for slot: Int) -> String {
+        switch slot {
+        case 0: return UDKeys.address1
+        case 1: return UDKeys.address2
+        default: return UDKeys.address3
+        }
+    }
+
+    private static func latKey(for slot: Int) -> String {
+        switch slot {
+        case 0: return UDKeys.address1Lat
+        case 1: return UDKeys.address2Lat
+        default: return UDKeys.address3Lat
+        }
+    }
+
+    private static func lonKey(for slot: Int) -> String {
+        switch slot {
+        case 0: return UDKeys.address1Lon
+        case 1: return UDKeys.address2Lon
+        default: return UDKeys.address3Lon
         }
     }
 
@@ -34,6 +60,7 @@ class CompassViewModel {
     var isAssistiveAccessEnabled: Bool = false
     var displayHeading: Double = 0
     private var hasInitializedRotation = false
+    private var hasValidDestination = false
     
     // Cached slot addresses for sync access in UI
     var slotAddresses: [String] = ["", "", ""]
@@ -44,10 +71,10 @@ class CompassViewModel {
     private let locationManager = LocationManager()
     private let geocodingService = GeocodingService.shared
     
-    private var lastPublishedDistance: Double = .nan
-    private var lastPublishedBearing: Double = .nan
+    private var lastPublishedDistance: Double?
+    private var lastPublishedBearing: Double?
     private let publishCoalesceInterval: TimeInterval = 0.5
-    private var publishWork: DispatchWorkItem?
+    private var publishTask: Task<Void, Never>?
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -76,7 +103,8 @@ class CompassViewModel {
     private func updateDisplayHeading(_ newHeading: Double) {
         if !hasInitializedRotation {
             displayHeading = newHeading
-            // Initial initialization of arrow rotation too to avoid startup jump
+            // 延迟初始化直到有有效目的地数据，避免 angle=0 时的箭头跳变
+            guard hasValidDestination else { return }
             let target = angle - newHeading
             arrowRotation = target
             hasInitializedRotation = true
@@ -90,21 +118,11 @@ class CompassViewModel {
     func onAppear() {
         Task {
             await reloadData()
-            setupAssistiveAccessObservation()
             if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" {
                 locationManager.startLocationUpdates { _ in }
                 locationManager.startHeadingUpdates()
             }
             applyActiveDisplayProfile()
-        }
-    }
-    
-    private func setupAssistiveAccessObservation() {
-        // iOS 18+ feature detection
-        if #available(iOS 18.0, *) {
-            // Initial check
-            // self.isAssistiveAccessEnabled = UIAccessibility.isAssistiveAccessEnabled
-            // In a real app, we would listen to UIAccessibility.assistiveAccessStatusDidChangeNotification
         }
     }
     
@@ -124,28 +142,25 @@ class CompassViewModel {
         await loadSlotData()
         await loadLabels()
         updateDirection()
+        hasValidDestination = !destinations.isEmpty
     }
 
     private func loadSlotData() async {
         var newDestinations: [Destination] = []
         var newSlotAddresses: [String] = ["", "", ""]
-        
+
         for slot in 0...2 {
-            let key = slot == 0 ? UDKeys.address1 : slot == 1 ? UDKeys.address2 : UDKeys.address3
+            let key = Self.addressKey(for: slot)
             if let addr = await getAddress(forKey: key), !addr.isEmpty {
                 newSlotAddresses[slot] = addr
-                
-                let latKey = slot == 0 ? UDKeys.address1Lat : slot == 1 ? UDKeys.address2Lat : UDKeys.address3Lat
-                let lonKey = slot == 0 ? UDKeys.address1Lon : slot == 1 ? UDKeys.address2Lon : UDKeys.address3Lon
-                
-                let coord: CLLocationCoordinate2D
-                if let latStr = await SecureStorage.shared.getString(forKey: latKey),
-                   let lonStr = await SecureStorage.shared.getString(forKey: lonKey),
+
+                let coord: CLLocationCoordinate2D?
+                if let latStr = await SecureStorage.shared.getString(forKey: Self.latKey(for: slot)),
+                   let lonStr = await SecureStorage.shared.getString(forKey: Self.lonKey(for: slot)),
                    let lat = Double(latStr), let lon = Double(lonStr) {
                     coord = CLLocationCoordinate2D(latitude: lat, longitude: lon)
                 } else {
-                    coord = CLLocationCoordinate2D(latitude: 0, longitude: 0)
-                    // Trigger background geocoding if missing
+                    coord = nil
                     geocodeAndStoreAddress(addr, slot: slot)
                 }
                 newDestinations.append(Destination(address: addr, coordinate: coord, slot: slot))
@@ -170,17 +185,12 @@ class CompassViewModel {
     private func geocodeAndStoreAddress(_ address: String, slot: Int) {
         Task {
             if let coordinate = await geocodingService.geocodeAddress(address) {
-                let latKey = slot == 0 ? UDKeys.address1Lat : slot == 1 ? UDKeys.address2Lat : UDKeys.address3Lat
-                let lonKey = slot == 0 ? UDKeys.address1Lon : slot == 1 ? UDKeys.address2Lon : UDKeys.address3Lon
-                await SecureStorage.shared.setString(String(coordinate.latitude), forKey: latKey)
-                await SecureStorage.shared.setString(String(coordinate.longitude), forKey: lonKey)
+                await SecureStorage.shared.setString(String(coordinate.latitude), forKey: Self.latKey(for: slot))
+                await SecureStorage.shared.setString(String(coordinate.longitude), forKey: Self.lonKey(for: slot))
 
-                await MainActor.run {
-                    // Update the destination in our list if it exists
-                    if let index = self.destinations.firstIndex(where: { $0.slot == slot }) {
-                        self.destinations[index] = Destination(address: address, coordinate: coordinate, slot: slot)
-                        self.updateDirection()
-                    }
+                if let index = self.destinations.firstIndex(where: { $0.slot == slot }) {
+                    self.destinations[index] = Destination(address: address, coordinate: coordinate, slot: slot)
+                    self.updateDirection()
                 }
             }
         }
@@ -189,13 +199,8 @@ class CompassViewModel {
     func updateDirection() {
         guard selectedDestinationIndex < destinations.count else { return }
         let dest = destinations[selectedDestinationIndex]
-        
-        let targetCoord: CLLocationCoordinate2D
-        if dest.coordinate.latitude != 0 && dest.coordinate.longitude != 0 {
-            targetCoord = dest.coordinate
-        } else {
-            targetCoord = Coordinates.nagoyaCenter
-        }
+
+        let targetCoord = dest.coordinate ?? Coordinates.nagoyaCenter
         
         let currentCoord = locationManager.currentLocation?.coordinate ?? Coordinates.nagoyaStation
         distance = geocodingService.calculateDistance(from: currentCoord, to: targetCoord)
@@ -239,44 +244,39 @@ class CompassViewModel {
     }
 
     private func schedulePublish() {
-        publishWork?.cancel()
+        publishTask?.cancel()
+
+        guard selectedDestinationIndex < destinations.count else { return }
         let distanceVal = distance
         let angleVal = angle
         let headingVal = locationManager.currentHeading
-        
-        // Capture current state for the task
-        guard selectedDestinationIndex < destinations.count else { return }
         let dest = destinations[selectedDestinationIndex]
         let label = labelForSlot(dest.slot)
         let slot = dest.slot
 
-        let work = DispatchWorkItem { [weak self] in
-            Task { @MainActor in
-                guard let self = self else { return }
-                let bearingRel = self.wrapDelta(angleVal - headingVal)
+        publishTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, let self else { return }
 
-                let distDiff = abs(distanceVal - (self.lastPublishedDistance.isNaN ? distanceVal : self.lastPublishedDistance))
-                var bDiff = bearingRel - (self.lastPublishedBearing.isNaN ? bearingRel : self.lastPublishedBearing)
-                bDiff = bDiff.truncatingRemainder(dividingBy: 360)
-                if distDiff < 1.0 && abs(bDiff) < 0.5 { return }
+            let bearingRel = self.wrapDelta(angleVal - headingVal)
+            let distDiff = abs(distanceVal - (self.lastPublishedDistance ?? distanceVal))
+            let bDiff = abs(self.wrapDelta(bearingRel - (self.lastPublishedBearing ?? bearingRel)))
+            if distDiff < 1.0 && bDiff < 0.5 { return }
 
-                let snapshot = NaviSnapshot(
-                    slot: slot,
-                    destinationLabel: label,
-                    distanceMeters: distanceVal,
-                    bearingRelToDevice: bearingRel,
-                    lastUpdated: Date()
-                )
-                await SharedDataStore.shared.save(snapshot: snapshot)
-                self.lastPublishedDistance = distanceVal
-                self.lastPublishedBearing = bearingRel
-                
-                LiveActivityManager.shared.startIfAvailable(slot: slot, destinationLabel: label)
-                LiveActivityManager.shared.update(distanceMeters: distanceVal, bearingRelToDevice: bearingRel)
-            }
+            let snapshot = NaviSnapshot(
+                slot: slot,
+                destinationLabel: label,
+                distanceMeters: distanceVal,
+                bearingRelToDevice: bearingRel,
+                lastUpdated: Date()
+            )
+            await SharedDataStore.shared.save(snapshot: snapshot)
+            self.lastPublishedDistance = distanceVal
+            self.lastPublishedBearing = bearingRel
+
+            LiveActivityManager.shared.startIfAvailable(slot: slot, destinationLabel: label)
+            LiveActivityManager.shared.update(distanceMeters: distanceVal, bearingRelToDevice: bearingRel)
         }
-        publishWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + publishCoalesceInterval, execute: work)
     }
 
     func selectSlot(_ slotIndex: Int) {

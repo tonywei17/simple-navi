@@ -82,12 +82,13 @@ final class IAPManager: ObservableObject {
 struct DonationView: View {
     @Binding var isPresented: Bool
     private var localizationManager = LocalizationManager.shared
+    @Environment(\.layoutMetrics) private var metrics
     @StateObject private var iap = IAPManager()
     @State private var isProcessingPurchase = false
     @State private var showThankYou = false
     @State private var showError = false
     @State private var errorMessage = ""
-    
+
     init(isPresented: Binding<Bool>) {
         self._isPresented = isPresented
     }
@@ -96,11 +97,11 @@ struct DonationView: View {
     private func uiForProduct(_ id: String) -> (title: LocalizedStringKey, desc: LocalizedStringKey, icon: String, gradient: LinearGradient) {
         switch id {
         case "com.simplenavi.simplenavi.tip.small":
-            return (.coffeeRegular, .coffeeRegularDesc, "cup.and.saucer", LinearGradient(colors: [.brown, .orange], startPoint: .topLeading, endPoint: .bottomTrailing))
+            return (.coffeeRegular, .coffeeRegularDesc, "cup.and.saucer", LinearGradient(colors: [Color(red: 0.55, green: 0.40, blue: 0.25), DesignTokens.donatePrimary], startPoint: .topLeading, endPoint: .bottomTrailing))
         case "com.simplenavi.simplenavi.tip.medium":
-            return (.coffeeLatte, .coffeeLatteDesc, "cup.and.saucer.fill", LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing))
+            return (.coffeeLatte, .coffeeLatteDesc, "cup.and.saucer.fill", LinearGradient(colors: [DesignTokens.donatePrimary, DesignTokens.donateSecondary], startPoint: .topLeading, endPoint: .bottomTrailing))
         default:
-            return (.afternoonTea, .afternoonTeaDesc, "leaf.fill", LinearGradient(colors: [.green, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+            return (.afternoonTea, .afternoonTeaDesc, "leaf.fill", LinearGradient(colors: [DesignTokens.accent, DesignTokens.accentDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
         }
     }
     
@@ -140,16 +141,16 @@ struct DonationView: View {
                     
                     LinearGradient(
                         colors: [
-                            Color.orange.opacity(0.15),
-                            Color.red.opacity(0.08),
+                            DesignTokens.donatePrimary.opacity(0.10),
+                            DesignTokens.donateSecondary.opacity(0.06),
                             Color.clear
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
-                    
+
                     Circle()
-                        .fill(Color.pink.opacity(0.05))
+                        .fill(DesignTokens.donatePrimary.opacity(0.04))
                         .frame(width: 400, height: 400)
                         .blur(radius: 60)
                         .offset(x: 150, y: -200)
@@ -162,6 +163,8 @@ struct DonationView: View {
                         donationOptionsSection
                         cancelButton
                     }
+                    .frame(maxWidth: metrics.modalMaxWidth)
+                    .frame(maxWidth: .infinity)
                 }
                 
                 if isProcessingPurchase {
@@ -194,19 +197,15 @@ struct DonationView: View {
                 
                 Text(String(localized: .donateMessage))
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(DesignTokens.textSecondary)
                     .multilineTextAlignment(.center)
             }
         }
+        .padding(.horizontal, metrics.cardPadding)
         .padding(.vertical, 32)
         .frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(.white.opacity(0.5), lineWidth: 1)
-        )
-        .padding(.horizontal, 20)
+        .glassCard(cornerRadius: 32)
+        .padding(.horizontal, metrics.horizontalMargin)
         .padding(.top, 20)
     }
     
@@ -215,13 +214,13 @@ struct DonationView: View {
             Circle()
                 .fill(
                     LinearGradient(
-                        colors: [.orange, .red],
+                        colors: [DesignTokens.donatePrimary, DesignTokens.donateSecondary],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
                 .frame(width: 80, height: 80)
-                .shadow(color: .orange.opacity(0.3), radius: 15, x: 0, y: 8)
+                .shadow(color: DesignTokens.donatePrimary.opacity(0.3), radius: 15, x: 0, y: 8)
             
             Image(systemName: "heart.fill")
                 .font(.system(size: 36, weight: .medium))
@@ -238,16 +237,16 @@ struct DonationView: View {
                 donationOptionCard(product: product)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, metrics.horizontalMargin)
     }
-    
+
     private var cancelButton: some View {
         Button(action: {
             isPresented = false
         }) {
             Text(String(localized: .cancel))
                 .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundColor(.primary.opacity(0.6))
+                .foregroundColor(.primary.opacity(0.80))
                 .frame(maxWidth: .infinity)
                 .frame(height: 64)
                 .background(
@@ -255,10 +254,10 @@ struct DonationView: View {
                         .fill(Color.primary.opacity(0.05))
                 )
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, metrics.horizontalMargin)
         .padding(.bottom, 24)
     }
-    
+
     private var loadingOverlay: some View {
         Color.black.opacity(0.3)
             .ignoresSafeArea()
@@ -269,7 +268,7 @@ struct DonationView: View {
                         .scaleEffect(1.5)
                     
                     Text(String(localized: .loading))
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.system(size: DesignTokens.statusTextSize, weight: .bold))
                         .foregroundColor(.white)
                 }
                 .padding(30)
@@ -310,7 +309,7 @@ struct DonationView: View {
                     
                     Text(String(localized: ui.desc))
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DesignTokens.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 
@@ -320,13 +319,8 @@ struct DonationView: View {
                     .foregroundColor(.primary)
             }
             .padding(20)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(.white.opacity(0.5), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.05), radius: 12, x: 0, y: 6)
+            .glassCard()
+            .shadow(color: .black.opacity(DesignTokens.shadowOpacity), radius: 12, x: 0, y: 6)
             .scaleEffect(isProcessingPurchase ? 0.98 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: isProcessingPurchase)
         }

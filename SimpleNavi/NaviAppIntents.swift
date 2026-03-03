@@ -21,18 +21,19 @@ struct StartNavigationIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        // 在实际应用中，这里会通过 App Group 或通知告知主应用切换目的地
-        // 由于是极简导航，我们可以直接保存新的选择到 SharedDataStore
-        let label = await AddressLabelStore.load(slot: slot + 1)
-        _ = await getAddress(for: slot)
-        
-        // 这里的逻辑可以根据主应用的运行状态决定是打开 App 还是仅更新后台数据
-        // 对于 2026 年的 Apple Intelligence，建议返回一个简单的结果
+        let safeSlot = max(0, min(slot, 2))
+        let label = await AddressLabelStore.load(slot: safeSlot + 1)
+        _ = await getAddress(for: safeSlot)
         return .result(dialog: "好的，已为你开启向\(label)的指引。")
     }
-    
+
     private func getAddress(for slot: Int) async -> String {
-        let key = slot == 0 ? UDKeys.address1 : slot == 1 ? UDKeys.address2 : UDKeys.address3
+        let key: String
+        switch slot {
+        case 0: key = UDKeys.address1
+        case 1: key = UDKeys.address2
+        default: key = UDKeys.address3
+        }
         return await SecureStorage.shared.getString(forKey: key) ?? ""
     }
 }

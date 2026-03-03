@@ -82,7 +82,6 @@ class JapaneseAddressManager: ObservableObject {
     
     // 获取地址建议
     func getAddressSuggestions(for input: String) -> [String] {
-        _ = input.lowercased()
         var suggestions: [String] = []
         
         // 基于输入提供智能建议
@@ -112,28 +111,39 @@ class JapaneseAddressManager: ObservableObject {
             ])
         }
         
-        return suggestions.prefix(5).map { $0 }
+        return Array(suggestions.prefix(5))
     }
     
-    // 使用 Swift 并发 (async/await) 进行地理编码
-    func geocodeAddress(_ address: String) async throws -> CLLocationCoordinate2D {
+    // 使用 Swift 并发 (async/await) 进行地理编码，含 10 秒超时
+    func geocodeAddress(_ address: String, timeout: TimeInterval = 10) async throws -> CLLocationCoordinate2D {
         let geocoder = CLGeocoder()
         let formattedAddress = formatJapaneseAddress(address)
-        
-        // 使用 withCheckedThrowingContinuation 将基于闭包的 API 转换为 async/await
-        return try await withCheckedThrowingContinuation { continuation in
-            geocoder.geocodeAddressString(formattedAddress) { placemarks, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
+
+        return try await withThrowingTaskGroup(of: CLLocationCoordinate2D.self) { group in
+            group.addTask {
+                try await withCheckedThrowingContinuation { continuation in
+                    geocoder.geocodeAddressString(formattedAddress) { placemarks, error in
+                        if let error = error {
+                            continuation.resume(throwing: error)
+                            return
+                        }
+                        guard let placemark = placemarks?.first,
+                              let location = placemark.location else {
+                            continuation.resume(throwing: GeocodingError.noResults)
+                            return
+                        }
+                        continuation.resume(returning: location.coordinate)
+                    }
                 }
-                guard let placemark = placemarks?.first,
-                      let location = placemark.location else {
-                    continuation.resume(throwing: GeocodingError.noResults)
-                    return
-                }
-                continuation.resume(returning: location.coordinate)
             }
+            group.addTask {
+                try await Task.sleep(for: .seconds(timeout))
+                throw GeocodingError.networkError
+            }
+
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
         }
     }
     

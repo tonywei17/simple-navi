@@ -12,27 +12,38 @@ actor SecureStorage {
     private let keychainAccount = "encryption-key"
     private let userDefaults = UserDefaults.standard
 
-    // MARK: - Public API
-    func setString(_ value: String?, forKey key: String) {
+    // MARK: - Public API (throws)
+
+    func trySetString(_ value: String?, forKey key: String) throws {
         guard let value, !value.isEmpty else {
             userDefaults.removeObject(forKey: key)
             return
         }
+        let enc = try encrypt(Data(value.utf8))
+        userDefaults.set(enc.base64EncodedString(), forKey: key)
+    }
+
+    func tryGetString(forKey key: String) throws -> String? {
+        guard let b64 = userDefaults.string(forKey: key), let data = Data(base64Encoded: b64) else {
+            return nil
+        }
+        let dec = try decrypt(data)
+        return String(data: dec, encoding: .utf8)
+    }
+
+    // MARK: - Public API (non-throwing, backward compatible)
+
+    func setString(_ value: String?, forKey key: String) {
         do {
-            let enc = try encrypt(Data(value.utf8))
-            userDefaults.set(enc.base64EncodedString(), forKey: key)
+            try trySetString(value, forKey: key)
         } catch {
             print("[SecureStorage] Encrypt failed: \(error)")
         }
     }
 
     func getString(forKey key: String) -> String? {
-        guard let b64 = userDefaults.string(forKey: key), let data = Data(base64Encoded: b64) else {
-            return nil
-        }
         do {
-            let dec = try decrypt(data)
-            return String(data: dec, encoding: .utf8)
+            return try tryGetString(forKey: key)
         } catch {
             print("[SecureStorage] Decrypt failed: \(error)")
             return nil

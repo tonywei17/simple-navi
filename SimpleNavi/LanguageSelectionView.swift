@@ -4,6 +4,7 @@ import UIKit
 struct LanguageSelectionView: View {
     private var localizationManager = LocalizationManager.shared
     @Binding var isPresented: Bool
+    @Environment(\.layoutMetrics) private var metrics
 
     init(isPresented: Binding<Bool>) {
         self._isPresented = isPresented
@@ -12,7 +13,7 @@ struct LanguageSelectionView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color.blue.opacity(0.1), Color.green.opacity(0.05)],
+                colors: [DesignTokens.bgGradientStart, DesignTokens.bgGradientMiddle],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -21,14 +22,14 @@ struct LanguageSelectionView: View {
             VStack(spacing: 20) {
                 headerView
                     .padding(.top, 24)
-                
+
                 ScrollView {
                     VStack(spacing: 16) {
                         ForEach(SupportedLanguage.allCases, id: \.self) { language in
                             languageOption(language)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, metrics.horizontalMargin)
                     .padding(.vertical, 8)
                 }
 
@@ -36,6 +37,8 @@ struct LanguageSelectionView: View {
 
                 doneButton
             }
+            .frame(maxWidth: metrics.modalMaxWidth)
+            .frame(maxWidth: .infinity)
         }
     }
     
@@ -54,15 +57,15 @@ struct LanguageSelectionView: View {
             .frame(height: 72)
             .background(
                 LinearGradient(
-                    colors: [.blue, .purple],
+                    colors: [DesignTokens.accent, DesignTokens.accentDeep],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: .blue.opacity(0.2), radius: 10, x: 0, y: 5)
+            .shadow(color: DesignTokens.accent.opacity(0.25), radius: 10, x: 0, y: 5)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, metrics.horizontalMargin)
         .padding(.bottom, 24)
     }
 
@@ -83,7 +86,7 @@ struct LanguageSelectionView: View {
                     
                     Text(getLanguageNativeName(language))
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(DesignTokens.textSecondary)
                 }
                 
                 Spacer()
@@ -91,22 +94,23 @@ struct LanguageSelectionView: View {
                 if localizationManager.currentLanguage == language {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 24))
-                        .foregroundColor(.blue)
+                        .foregroundColor(DesignTokens.accent)
                 }
             }
             .padding(20)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .glassCard()
             .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(
-                        localizationManager.currentLanguage == language 
-                        ? AnyShapeStyle(LinearGradient(colors: [.blue.opacity(0.5), .purple.opacity(0.5)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        : AnyShapeStyle(.white.opacity(0.5)),
-                        lineWidth: localizationManager.currentLanguage == language ? 2 : 1
-                    )
+                Group {
+                    if localizationManager.currentLanguage == language {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(
+                                LinearGradient(colors: [DesignTokens.accent.opacity(0.5), DesignTokens.accentDeep.opacity(0.5)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                lineWidth: 2
+                            )
+                    }
+                }
             )
-            .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+            .shadow(color: .black.opacity(DesignTokens.shadowOpacity), radius: 10, x: 0, y: 4)
             .scaleEffect(localizationManager.currentLanguage == language ? 1.02 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: localizationManager.currentLanguage)
         }
@@ -130,17 +134,12 @@ struct LanguageSelectionView: View {
                 .foregroundColor(.primary)
             Text(localized: .selectLanguage)
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.secondary)
+                .foregroundColor(DesignTokens.textSecondary)
         }
         .padding(.vertical, 24)
         .frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(.white.opacity(0.5), lineWidth: 1)
-        )
-        .padding(.horizontal, 20)
+        .glassCard(cornerRadius: 28)
+        .padding(.horizontal, metrics.horizontalMargin)
     }
 }
 

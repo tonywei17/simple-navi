@@ -10,7 +10,7 @@ import ActivityKit
 final class LiveActivityManager {
     static let shared = LiveActivityManager()
     // 全局开关：禁用灵动岛/Live Activity 时置为 false
-    private let isEnabled = false
+    private let isEnabled = true
 
     #if canImport(ActivityKit)
     private var anyActivity: Any?

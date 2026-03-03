@@ -4,6 +4,7 @@ import UIKit
 // 复用的指南针箭头组件：优先使用自定义图片资源，否则回退到 SF Symbols
 struct CompassArrow: View {
     let rotation: Double // 传入 angle - currentHeading
+    var size: CGFloat = 84
     
     private func customArrowImage() -> UIImage? {
         // 支持多种命名，任意一个存在即使用
@@ -27,7 +28,7 @@ struct CompassArrow: View {
                     .renderingMode(.original)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 84, height: 84)
+                    .frame(width: size, height: size)
                     .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
                     .rotationEffect(.degrees(rotation - 45))
             } else {
@@ -45,9 +46,9 @@ struct CompassArrow: View {
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [
-                                    Color(red: 0.15, green: 0.6, blue: 1.0),
-                                    Color.blue,
-                                    Color.purple.opacity(0.8)
+                                    DesignTokens.arrowPrimary,
+                                    DesignTokens.arrowSecondary,
+                                    DesignTokens.arrowSecondary.opacity(0.9)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -61,7 +62,7 @@ struct CompassArrow: View {
                                 .rotationEffect(.degrees(rotation - 45))
                                 .blendMode(.overlay)
                         )
-                        .shadow(color: Color.blue.opacity(0.3), radius: 10, x: 0, y: 4)
+                        .shadow(color: DesignTokens.arrowPrimary.opacity(0.35), radius: 10, x: 0, y: 4)
                 }
             }
         }

@@ -19,11 +19,15 @@ struct SimpleNaviWidgetsControl: ControlWidget {
             provider: Provider()
         ) { value in
             ControlWidgetButton(action: StartNavigationIntent(slot: 0)) {
-                Label("回家", systemImage: "house.fill")
+                Label {
+                    Text("Home", bundle: .main)
+                } icon: {
+                    Image(systemName: "house.fill")
+                }
             }
         }
-        .displayName("回家导航")
-        .description("从控制中心一键开启回家导航。")
+        .displayName(LocalizedStringResource("Quick Navigation", comment: "Control widget display name"))
+        .description(LocalizedStringResource("Start home navigation from Control Center.", comment: "Control widget description"))
     }
 }
 
@@ -35,19 +39,19 @@ extension SimpleNaviWidgetsControl {
 
     struct Provider: AppIntentControlValueProvider {
         func previewValue(configuration: ControlConfiguration) -> Value {
-            Value(destinationName: "家")
+            Value(destinationName: "Home")
         }
 
         func currentValue(configuration: ControlConfiguration) async throws -> Value {
-            return Value(destinationName: "家")
+            return Value(destinationName: "Home")
         }
     }
 }
 
 @available(iOS 18.0, *)
 struct ControlConfiguration: ControlConfigurationIntent {
-    static let title: LocalizedStringResource = "目的地配置"
-    
-    @Parameter(title: "目的地", default: "家")
+    static let title: LocalizedStringResource = "Destination Configuration"
+
+    @Parameter(title: "Destination", default: "Home")
     var destination: String
 }

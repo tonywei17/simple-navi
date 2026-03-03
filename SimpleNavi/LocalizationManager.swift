@@ -30,13 +30,19 @@ enum SupportedLanguage: String, CaseIterable {
 @MainActor
 class LocalizationManager {
     static let shared = LocalizationManager()
-    
+
+    // 线程安全的缓存，供非主线程访问本地化字符串
+    // swiftlint:disable:next nonisolated_unsafe
+    nonisolated(unsafe) private static let cacheLock = NSLock()
+    nonisolated(unsafe) private static var stringCache: [String: String] = [:]
+
     var currentLanguage: SupportedLanguage = .chinese {
         didSet {
             UserDefaults.standard.set(currentLanguage.rawValue, forKey: UDKeys.selectedLanguage)
+            Self.rebuildCache(for: currentLanguage)
         }
     }
-    
+
     private init() {
         // 从UserDefaults加载保存的语言
         if let savedLanguage = UserDefaults.standard.string(forKey: UDKeys.selectedLanguage),
@@ -45,7 +51,7 @@ class LocalizationManager {
         } else {
             // 根据系统语言自动选择
             let systemLanguage = Locale.current.language.languageCode?.identifier ?? "en"
-            
+
             switch systemLanguage {
             case "zh":
                 currentLanguage = .chinese
@@ -55,11 +61,31 @@ class LocalizationManager {
                 currentLanguage = .english
             }
         }
+        Self.rebuildCache(for: currentLanguage)
     }
-    
+
     /// Return a localized string for the given key, falling back to English if missing.
     func localizedString(_ key: LocalizedStringKey) -> String {
         return localizedStrings[currentLanguage]?[key] ?? localizedStrings[.english]?[key] ?? key.stringKey
+    }
+
+    /// 重建线程安全缓存（语言切换时调用）
+    private static func rebuildCache(for language: SupportedLanguage) {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        stringCache.removeAll()
+        for key in LocalizedStringKey.allCases {
+            stringCache[key.rawValue] = localizedStrings[language]?[key]
+                ?? localizedStrings[.english]?[key]
+                ?? key.stringKey
+        }
+    }
+
+    /// 线程安全的缓存读取，供非主线程使用
+    nonisolated static func cachedString(for key: LocalizedStringKey) -> String {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        return stringCache[key.rawValue] ?? key.stringKey
     }
 }
 
@@ -235,7 +261,7 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
     ],
     
     .chinese: [
-        .appName: "极简导航",
+        .appName: "丢了吗",
         .settings: "设置",
         .save: "保存",
         .cancel: "取消",
@@ -245,9 +271,9 @@ private let localizedStrings: [SupportedLanguage: [LocalizedStringKey: String]] 
         .done: "完成",
         .loading: "加载中",
         .error: "错误",
-        
-        .setupTitle: "极简导航",
-        .setupSubtitle: "设置重要地址",
+
+        .setupTitle: "丢了吗",
+        .setupSubtitle: "极简导航 · 设置重要地址",
         .address1Home: "地址 1 (家)",
         .address2Work: "地址 2 (工作)",
         .address3Other: "地址 3 (其他)",
@@ -406,17 +432,13 @@ extension Text {
 
 extension String {
     nonisolated init(localized key: LocalizedStringKey) {
-        // Safely access main-actor isolated code from any context
         if Thread.isMainThread {
             self = MainActor.assumeIsolated {
                 LocalizationManager.shared.localizedString(key)
             }
         } else {
-            self = DispatchQueue.main.sync {
-                MainActor.assumeIsolated {
-                    LocalizationManager.shared.localizedString(key)
-                }
-            }
+            // 使用线程安全的缓存，避免 DispatchQueue.main.sync 死锁风险
+            self = LocalizationManager.cachedString(for: key)
         }
     }
 }
