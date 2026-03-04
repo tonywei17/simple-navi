@@ -245,6 +245,7 @@ struct CompassView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(metrics.cardPadding)
+            .frame(maxWidth: .infinity)
             .glassCard()
             .shadow(color: .black.opacity(DesignTokens.shadowOpacity), radius: 10, x: 0, y: 5)
             .padding(.horizontal, metrics.horizontalMargin)
@@ -291,6 +292,7 @@ struct CompassView: View {
             }
         }
         .padding(metrics.cardPadding)
+        .frame(maxWidth: .infinity)
         .glassCard()
         .shadow(color: .black.opacity(DesignTokens.shadowOpacity), radius: 15, x: 0, y: 5)
         .padding(.horizontal, metrics.horizontalMargin)
