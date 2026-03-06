@@ -141,101 +141,118 @@ class JapaneseAddressManager: ObservableObject {
                 throw GeocodingError.networkError
             }
 
-            let result = try await group.next()!
+            guard let result = try await group.next() else {
+                throw GeocodingError.networkError
+            }
             group.cancelAll()
             return result
         }
     }
     
-    // 反向地理编码（从坐标获取地址）- 全球适用
-    func reverseGeocodeCoordinate(_ coordinate: CLLocationCoordinate2D) async throws -> String {
+    // 反向地理编码（从坐标获取地址）- 全球适用，使用 app 内选择的语言，含 10 秒超时
+    func reverseGeocodeCoordinate(_ coordinate: CLLocationCoordinate2D, timeout: TimeInterval = 10) async throws -> String {
         let geocoder = CLGeocoder()
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        let preferredLocale = await MainActor.run { Locale(identifier: LocalizationManager.shared.currentLanguage.rawValue) }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            geocoder.reverseGeocodeLocation(location) { placemarks, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                guard let placemark = placemarks?.first else {
-                    continuation.resume(throwing: GeocodingError.noResults)
-                    return
-                }
-
-                // iOS 提供 CNPostalAddress（全球格式），优先使用
-                if let postal = placemark.postalAddress {
-                    let formatter = CNPostalAddressFormatter()
-                    formatter.style = .mailingAddress
-                    var formatted = formatter.string(from: postal)
-                    // 转为单行便于展示
-                    formatted = formatted.replacingOccurrences(of: "\n", with: " ")
-                    formatted = formatted.replacingOccurrences(of: "  ", with: " ")
-                    let trimmed = formatted.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmed.isEmpty {
-                        continuation.resume(returning: trimmed)
-                        return
-                    }
-                }
-
-                // 若无 CNPostalAddress 或为空：
-                // JP 使用日式拼接；其他地区使用通用逗号拼接
-                var result = ""
-                let iso = placemark.isoCountryCode?.uppercased() ?? ""
-                if iso == "JP" {
-                    var parts: [String] = []
-                    if let postalCode = placemark.postalCode, !postalCode.isEmpty { parts.append(postalCode) }
-                    if let administrativeArea = placemark.administrativeArea { parts.append(administrativeArea) }
-                    if let locality = placemark.locality { parts.append(locality) }
-                    if let subLocality = placemark.subLocality { parts.append(subLocality) }
-                    if let thoroughfare = placemark.thoroughfare { parts.append(thoroughfare) }
-                    if let subThoroughfare = placemark.subThoroughfare { parts.append(subThoroughfare) }
-                    result = parts.joined(separator: "")
-                } else {
-                    var parts: [String] = []
-                    // 常见顺序：街道号 街道, 城市/区县, 省/州, 邮编, 国家
-                    let hasStreet = (placemark.thoroughfare?.isEmpty == false)
-                    let hasNumber = (placemark.subThoroughfare?.isEmpty == false)
-
-                    if hasStreet {
-                        if hasNumber {
-                            parts.append("\(placemark.subThoroughfare!) \(placemark.thoroughfare!)")
-                        } else {
-                            parts.append(placemark.thoroughfare!)
+        return try await withThrowingTaskGroup(of: String.self) { group in
+            group.addTask {
+                try await withCheckedThrowingContinuation { continuation in
+                    geocoder.reverseGeocodeLocation(location, preferredLocale: preferredLocale) { placemarks, error in
+                        if let error = error {
+                            continuation.resume(throwing: error)
+                            return
                         }
-                    } else if let name = placemark.name, !name.isEmpty {
-                        parts.append(name)
+                        guard let placemark = placemarks?.first else {
+                            continuation.resume(throwing: GeocodingError.noResults)
+                            return
+                        }
+
+                        // iOS 提供 CNPostalAddress（全球格式），优先使用
+                        if let postal = placemark.postalAddress {
+                            let formatter = CNPostalAddressFormatter()
+                            formatter.style = .mailingAddress
+                            var formatted = formatter.string(from: postal)
+                            // 转为单行便于展示
+                            formatted = formatted.replacingOccurrences(of: "\n", with: " ")
+                            formatted = formatted.replacingOccurrences(of: "  ", with: " ")
+                            let trimmed = formatted.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !trimmed.isEmpty {
+                                continuation.resume(returning: trimmed)
+                                return
+                            }
+                        }
+
+                        // 若无 CNPostalAddress 或为空：
+                        // JP 使用日式拼接；其他地区使用通用逗号拼接
+                        var result = ""
+                        let iso = placemark.isoCountryCode?.uppercased() ?? ""
+                        if iso == "JP" {
+                            var parts: [String] = []
+                            if let postalCode = placemark.postalCode, !postalCode.isEmpty { parts.append(postalCode) }
+                            if let administrativeArea = placemark.administrativeArea { parts.append(administrativeArea) }
+                            if let locality = placemark.locality { parts.append(locality) }
+                            if let subLocality = placemark.subLocality { parts.append(subLocality) }
+                            if let thoroughfare = placemark.thoroughfare { parts.append(thoroughfare) }
+                            if let subThoroughfare = placemark.subThoroughfare { parts.append(subThoroughfare) }
+                            result = parts.joined(separator: "")
+                        } else {
+                            var parts: [String] = []
+                            // 常见顺序：街道号 街道, 城市/区县, 省/州, 邮编, 国家
+                            let hasStreet = (placemark.thoroughfare?.isEmpty == false)
+                            let hasNumber = (placemark.subThoroughfare?.isEmpty == false)
+
+                            if hasStreet {
+                                if hasNumber {
+                                    parts.append("\(placemark.subThoroughfare!) \(placemark.thoroughfare!)")
+                                } else {
+                                    parts.append(placemark.thoroughfare!)
+                                }
+                            } else if let name = placemark.name, !name.isEmpty {
+                                parts.append(name)
+                            }
+
+                            if let locality = placemark.locality, !locality.isEmpty { parts.append(locality) }
+                            if let subAdmin = placemark.subAdministrativeArea, !subAdmin.isEmpty, !parts.contains(subAdmin) { parts.append(subAdmin) }
+                            if let subLocality = placemark.subLocality, !subLocality.isEmpty, !parts.contains(subLocality) { parts.append(subLocality) }
+                            if let admin = placemark.administrativeArea, !admin.isEmpty { parts.append(admin) }
+                            if let postal = placemark.postalCode, !postal.isEmpty { parts.append(postal) }
+                            if let country = placemark.country, !country.isEmpty { parts.append(country) }
+                            result = parts.filter { !$0.isEmpty }.joined(separator: ", ")
+                        }
+
+                        let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty {
+                            continuation.resume(returning: trimmed)
+                            return
+                        }
+
+                        // 进一步兜底
+                        if let name = placemark.name, !name.isEmpty {
+                            let composed = [name, placemark.locality, placemark.administrativeArea, placemark.country]
+                                .compactMap { $0 }
+                                .filter { !$0.isEmpty }
+                                .joined(separator: ", ")
+                            if !composed.isEmpty {
+                                continuation.resume(returning: composed)
+                                return
+                            }
+                        }
+
+                        continuation.resume(throwing: GeocodingError.noResults)
                     }
-
-                    if let locality = placemark.locality, !locality.isEmpty { parts.append(locality) }
-                    if let subAdmin = placemark.subAdministrativeArea, !subAdmin.isEmpty, !parts.contains(subAdmin) { parts.append(subAdmin) }
-                    if let subLocality = placemark.subLocality, !subLocality.isEmpty, !parts.contains(subLocality) { parts.append(subLocality) }
-                    if let admin = placemark.administrativeArea, !admin.isEmpty { parts.append(admin) }
-                    if let postal = placemark.postalCode, !postal.isEmpty { parts.append(postal) }
-                    if let country = placemark.country, !country.isEmpty { parts.append(country) }
-                    result = parts.filter { !$0.isEmpty }.joined(separator: ", ")
                 }
-
-                let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmed.isEmpty {
-                    continuation.resume(returning: trimmed)
-                    return
-                }
-
-                // 进一步兜底
-                if let name = placemark.name, !name.isEmpty {
-                    let composed = [name, placemark.locality, placemark.administrativeArea, placemark.country]
-                        .compactMap { $0 }
-                        .filter { !$0.isEmpty }
-                        .joined(separator: ", ")
-                    if !composed.isEmpty {
-                        continuation.resume(returning: composed)
-                        return
-                    }
-                }
-                
-                continuation.resume(throwing: GeocodingError.noResults)
             }
+            group.addTask {
+                try await Task.sleep(for: .seconds(timeout))
+                throw GeocodingError.networkError
+            }
+
+            guard let result = try await group.next() else {
+                throw GeocodingError.networkError
+            }
+            group.cancelAll()
+            return result
         }
     }
 

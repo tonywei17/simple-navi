@@ -109,6 +109,9 @@ struct AddressMapConfirmView: View {
                     ZStack {
                         Map(position: $mapState.position, interactionModes: .all) {
                         }
+                        .onMapCameraChange(frequency: .onEnd) { context in
+                            mapCenterChanged(to: context.camera.centerCoordinate)
+                        }
                         .mapStyle(.standard(elevation: .flat))
                         .frame(minHeight: metrics.mapMinHeight, maxHeight: metrics.mapMaxHeight)
                         .aspectRatio(metrics.mapAspectRatio, contentMode: .fit)
