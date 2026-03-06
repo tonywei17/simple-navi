@@ -19,6 +19,7 @@
     {
       "layers" : [
         {
+          "fill" : "automatic",
           "fill-specializations" : [
             {
               "value" : {
@@ -56,9 +57,13 @@
                   }
                 }
               }
+            },
+            {
+              "appearance" : "mono",
+              "value" : "system-light"
             }
           ],
-          "image-name" : "navigation.svg",
+          "image-name" : "navigation.png",
           "name" : "navigation",
           "position" : {
             "scale" : 1.3,
