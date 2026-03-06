@@ -94,3 +94,7 @@ iOSInjectionProject/
 
 # Command-line DerivedData output
 build-cli/
+
+# Build logs
+build.log
+*.log
