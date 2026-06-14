@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git config:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(xcrun simctl list:*)",
+      "Bash(xcrun simctl boot:*)",
+      "Bash(open:*)",
+      "Bash(xcrun simctl install:*)",
+      "Bash(xcrun simctl launch:*)",
+      "Bash(/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project . -scheme SimpleNavi)",
+      "Bash(swift build)",
+      "Bash(swift:*)",
+      "Bash(xcrun xctrace:*)",
+      "Bash(security find-identity:*)",
+      "Bash(xcrun xcodebuild:*)",
+      "Bash(xcrun devicectl list:*)",
+      "Bash(xcrun devicectl device install app:*)",
+      "Bash(xcrun devicectl device process launch:*)",
+      "Bash(xcrun devicectl device process list:*)",
+      "Bash(xcrun devicectl device list:*)",
+      "Bash(xcrun simctl help:*)",
+      "Bash(echo:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(xcrun swiftc:*)",
+      "Read(//Users/wenxinwei/Library/Containers/at.EternalStorms.Yoink-setapp/Data/Documents/YoinkPromisedFiles.noIndex/yoinkFilePromiseCreationFolder2CBEDBCC-1DA5-467D-A885-A4792CF1770F/add2CBEDBCC-1DA5-467D-A885-A4792CF1770F/**)",
+      "Read(//Users/wenxinwei/Library/Containers/at.EternalStorms.Yoink-setapp/Data/Documents/YoinkPromisedFiles.noIndex/yoinkFilePromiseCreationFolder043F8303-7D0E-4DBB-B84D-C105C85D2027/add043F8303-7D0E-4DBB-B84D-C105C85D2027/**)",
+      "Read(//Users/wenxinwei/Downloads/**)",
+      "Bash(find:*)",
+      "Bash(uuidgen)",
+      "Bash(git stash push:*)",
+      "Bash(git reset:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
